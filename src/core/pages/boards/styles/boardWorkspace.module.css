@@ -345,6 +345,18 @@
   gap: 1rem;
   margin-top: 1rem;
   align-items: flex-start;
+  padding-right: 1rem;
+}
+
+.columnsArea > .column:last-child {
+  margin-right: 1rem; /* ou o valor que preferir */
+}
+
+.columnsArea::after {
+  content: "";
+  display: block;
+  min-width: 1rem; /* ou 40px, 3rem, etc */
+  height: 1px;
 }
 
 .emptyBoard {

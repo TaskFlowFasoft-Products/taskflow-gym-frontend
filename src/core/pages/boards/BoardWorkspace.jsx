@@ -35,7 +35,7 @@ import { updateTask } from "../../api/taskService";
 import { deleteTask } from "../../api/taskService";
 
 
-const BoardWorkspace = () => {
+const BoardWorkspace = ({ boardService, allowAddColumn = true }) => {
   const [boards, setBoards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -78,6 +78,9 @@ const BoardWorkspace = () => {
 
   const [loggedInUserName, setLoggedInUserName] = useState("Carregando...");
 
+  // Se boardService for passado como prop, usa ele. Senão, usa o padrão do core.
+  const getBoardsService = boardService?.getBoards || getBoards;
+
   useEffect(() => {
     const storedUsername = localStorage.getItem("username");
     if (storedUsername) {
@@ -89,7 +92,7 @@ const BoardWorkspace = () => {
 
   useEffect(() => {
     const fetchBoards = async () => {
-      const data = await getBoards();
+      const data = await getBoardsService();
   
       const normalizedBoards = data.map((board) => ({
         ...board,
@@ -882,38 +885,42 @@ const BoardWorkspace = () => {
                         );
                       })}
 
-                      <button
-                        className={styles.addColumnStyledBtn}
-                        onClick={() => {
-                          if (selectedBoardIndex !== null) {
-                            setShowCreateColumnModal(true);
-                          } else {
-                            alert("Selecione ou crie um quadro primeiro.");
-                          }
-                        }}
-                      >
-                        <FaPlus size={10} style={{ marginRight: "6px" }} />
-                        Adicionar nova lista
-                      </button>
+                      {allowAddColumn && (
+                        <button
+                          className={styles.addColumnStyledBtn}
+                          onClick={() => {
+                            if (selectedBoardIndex !== null) {
+                              setShowCreateColumnModal(true);
+                            } else {
+                              alert("Selecione ou crie um quadro primeiro.");
+                            }
+                          }}
+                        >
+                          <FaPlus size={10} style={{ marginRight: "6px" }} />
+                          Adicionar nova lista
+                        </button>
+                      )}
                     </>
                   ) : (
                     <div className={styles.emptyBoard}>
                       <p className={styles.emptyText}>
                         Este quadro está vazio. <em>Comece criando uma coluna.</em>
                       </p>
-                      <button
-                        className={styles.addColumnStyledBtn}
-                        onClick={() => {
-                          if (selectedBoardIndex !== null) {
-                            setShowCreateColumnModal(true);
-                          } else {
-                            alert("Selecione ou crie um quadro primeiro.");
-                          }
-                        }}
-                      >
-                        <FaPlus size={10} style={{ marginRight: "6px" }} />
-                        Adicionar nova lista
-                      </button>
+                      {allowAddColumn && (
+                        <button
+                          className={styles.addColumnStyledBtn}
+                          onClick={() => {
+                            if (selectedBoardIndex !== null) {
+                              setShowCreateColumnModal(true);
+                            } else {
+                              alert("Selecione ou crie um quadro primeiro.");
+                            }
+                          }}
+                        >
+                          <FaPlus size={10} style={{ marginRight: "6px" }} />
+                          Adicionar nova lista
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
