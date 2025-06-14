@@ -35,7 +35,15 @@ import { updateTask } from "../../api/taskService";
 import { deleteTask } from "../../api/taskService";
 
 
-const BoardWorkspace = ({ boardService, allowAddColumn = true }) => {
+const BoardWorkspace = ({
+  boardService,
+  allowAddColumn = true,
+  allowAddBoard = true,
+  allowEditColumn = true,
+  allowDeleteColumn = true,
+  allowEditBoard = true,
+  allowDeleteBoard = true,
+}) => {
   const [boards, setBoards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -742,9 +750,11 @@ const BoardWorkspace = ({ boardService, allowAddColumn = true }) => {
                     <span className={styles.pinIcon}>📌</span>
                     {board.name}
                   </div>
-                  <div className={styles.boardMenu}>
-                    <FaEllipsisH onClick={(e) => handleMenuToggle(index, e)} />
-                  </div>
+                  {allowEditBoard || allowDeleteBoard && (
+                    <div className={styles.boardMenu}>
+                      <FaEllipsisH onClick={(e) => handleMenuToggle(index, e)} />
+                    </div>
+                  )}
                   {activeMenuIndex === index && (
                     <MenuPortal>
                       <div
@@ -757,25 +767,31 @@ const BoardWorkspace = ({ boardService, allowAddColumn = true }) => {
                           zIndex: 9999,
                         }}
                       >
-                        <button onClick={() => handleRename(index)}>
-                          <FaPen size={12} /> Renomear
-                        </button>
-                        <button onClick={() => handleDelete(index)}>
-                          <FaTrashAlt size={12} /> Excluir
-                        </button>
+                        {allowEditBoard && (
+                          <button onClick={() => handleRename(index)}>
+                            <FaPen size={12} /> Renomear
+                          </button>
+                        )}
+                        {allowDeleteBoard && (
+                          <button onClick={() => handleDelete(index)}>
+                            <FaTrashAlt size={12} /> Excluir
+                          </button>
+                        )}
                       </div>
                     </MenuPortal>
                   )}
                 </li>
               ))}
             </ul>
-            <button
-              className={styles.addBoardBtn}
-              onClick={() => setShowModal(true)}
-            >
-              <FaPlus size={12} style={{ marginRight: "6px" }} />
-              Novo Quadro
-            </button>
+            {allowAddBoard && (
+              <button
+                className={styles.addBoardBtn}
+                onClick={() => setShowModal(true)}
+              >
+                <FaPlus size={12} style={{ marginRight: "6px" }} />
+                Novo Quadro
+              </button>
+            )}
           </div>
         </aside>
 
@@ -805,19 +821,21 @@ const BoardWorkspace = ({ boardService, allowAddColumn = true }) => {
                               >
                                 <div className={styles.columnHeader}>
                                   <h3 className={styles.columnTitle}>{column.title}</h3>
-                                  <FaEllipsisH
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      const rect = e.currentTarget.getBoundingClientRect();
-                                      setColumnMenu({
-                                        columnId: column.id,
-                                        index: colIndex,
-                                        top: rect.bottom,
-                                        left: rect.left,
-                                      });
-                                    }}
-                                    className={styles.columnMenuIcon}
-                                  />
+                                  {allowEditColumn || allowDeleteColumn && (
+                                    <FaEllipsisH
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const rect = e.currentTarget.getBoundingClientRect();
+                                        setColumnMenu({
+                                          columnId: column.id,
+                                          index: colIndex,
+                                          top: rect.bottom,
+                                          left: rect.left,
+                                        });
+                                      }}
+                                      className={styles.columnMenuIcon}
+                                    />
+                                  )}
                                 </div>
 
                                 {columnMenu?.columnId === column.id && (
@@ -832,14 +850,18 @@ const BoardWorkspace = ({ boardService, allowAddColumn = true }) => {
                                         zIndex: 9999,
                                       }}
                                     >
-                                      <button onClick={() => openRenameColumnModal(columnMenu.index)}>
-                                        <FaPen size={12} style={{ marginRight: "6px" }} />
-                                        Renomear
-                                      </button>
-                                      <button onClick={() => confirmDeleteColumn(columnMenu.index)}>
-                                        <FaTrashAlt size={12} style={{ marginRight: "6px" }} />
-                                        Excluir
-                                      </button>
+                                      {allowEditColumn && (
+                                        <button onClick={() => openRenameColumnModal(columnMenu.index)}>
+                                          <FaPen size={12} style={{ marginRight: "6px" }} />
+                                          Renomear
+                                        </button>
+                                      )}
+                                      {allowDeleteColumn && (
+                                        <button onClick={() => confirmDeleteColumn(columnMenu.index)}>
+                                          <FaTrashAlt size={12} style={{ marginRight: "6px" }} />
+                                          Excluir
+                                        </button>
+                                      )}
                                     </div>
                                   </MenuPortal>
                                 )}
