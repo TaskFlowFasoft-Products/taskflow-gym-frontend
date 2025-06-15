@@ -45,4 +45,24 @@ export async function getExerciciosPorTipo(boardId, columnId, tipo) {
 export async function getExerciciosPorGrupoMuscular(boardId, columnId, grupoMuscular) {
   const tasks = await getTasks(boardId, columnId);
   return tasks.filter(task => task.grupoMuscular === grupoMuscular);
+}
+
+// Mock temporário enquanto o backend não está pronto
+export async function updateTask(taskId, taskData) {
+  console.log(`Mock: Atualizando card ${taskId} com dados:`, taskData);
+  return { success: true };
+}
+
+export async function createTask(taskData) {
+  console.log(`Mock: Criando card com dados:`, taskData);
+  return { 
+    id: Math.random().toString(),
+    ...taskData,
+    success: true 
+  };
+}
+
+export async function deleteTask(taskId) {
+  console.log(`Mock: Deletando card ${taskId}`);
+  return { success: true };
 } 

@@ -9,7 +9,9 @@ import RenameColumnModal from "./components/modals/RenameColumnModal";
 import DeleteCardConfirmModal from "./components/modals/DeleteCardConfirmModal";
 import CreateCardModal from "./components/modals/CreateCardModal";
 import DeleteColumnConfirmModal from "./components/modals/DeleteColumnConfirmModal";
-import { getBoards } from "../../api/boardService";
+import { getBoards as getCoreBoards, createBoard as createCoreBoard, deleteBoard as deleteCoreBoard, updateBoard as updateCoreBoard } from "../../api/boardService";
+import { createColumn as createCoreColumn, updateColumn as updateCoreColumn, deleteColumn as deleteCoreColumn, getBoardColumns as getCoreBoardColumns } from "../../api/columnService";
+import { createTask as createCoreTask, updateTask as updateCoreTask, deleteTask as deleteCoreTask } from "../../api/taskService";
 import MenuPortal from "../../components/MenuPortal";
 import {
   FaUserCircle,
@@ -23,20 +25,12 @@ import {
 import LogoIcon from "../../assets/Logo Icone.png";
 import { toast } from "react-toastify";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
-import { createBoard } from "../../api/boardService";
-import { deleteBoard } from "../../api/boardService"; 
-import { updateBoard } from "../../api/boardService";
-import { createColumn } from "../../api/columnService";
-import { updateColumn } from "../../api/columnService";
-import { deleteColumn } from "../../api/columnService";
-import { getBoardColumns } from "../../api/columnService";
-import { createTask } from "../../api/taskService";
-import { updateTask } from "../../api/taskService";
-import { deleteTask } from "../../api/taskService";
 
 
 const BoardWorkspace = ({
   boardService,
+  columnService,
+  taskService,
   allowAddColumn = true,
   allowAddBoard = true,
   allowEditColumn = true,
@@ -87,7 +81,19 @@ const BoardWorkspace = ({
   const [loggedInUserName, setLoggedInUserName] = useState("Carregando...");
 
   // Se boardService for passado como prop, usa ele. Senão, usa o padrão do core.
-  const getBoardsService = boardService?.getBoards || getBoards;
+  const getBoardsService = boardService?.getBoards || getCoreBoards;
+  const createBoardService = boardService?.createBoard || createCoreBoard;
+  const deleteBoardService = boardService?.deleteBoard || deleteCoreBoard;
+  const updateBoardService = boardService?.updateBoard || updateCoreBoard;
+
+  const createColumnService = columnService?.createColumn || createCoreColumn;
+  const updateColumnService = columnService?.updateColumn || updateCoreColumn;
+  const deleteColumnService = columnService?.deleteColumn || deleteCoreColumn;
+  const getBoardColumnsService = columnService?.getBoardColumns || getCoreBoardColumns;
+
+  const createTaskService = taskService?.createTask || createCoreTask;
+  const updateTaskService = taskService?.updateTask || updateCoreTask;
+  const deleteTaskService = taskService?.deleteTask || deleteCoreTask;
 
   useEffect(() => {
     const storedUsername = localStorage.getItem("username");
@@ -182,7 +188,7 @@ const BoardWorkspace = ({
     setIsDeletingColumn(true);
   
     try {
-        const result = await deleteColumn(board.id, column.id);
+        const result = await deleteColumnService(board.id, column.id);
     
         if (result.success) {
           setBoards((prevBoards) => {
@@ -196,7 +202,7 @@ const BoardWorkspace = ({
         } else {
           toast.error(result.message || "Erro ao excluir coluna.");
         }
-    } catch (error) {
+    } catch {
         toast.error("Erro ao excluir coluna.");
     } finally {
         setShowDeleteColumnModal(false);
@@ -230,7 +236,7 @@ const BoardWorkspace = ({
 
     setIsRenamingColumn(true);
   
-    const result = await updateColumn(board.id, column.id, newName);
+    const result = await updateColumnService(board.id, column.id, newName);
   
     if (result.success) {
       setBoards((prev) => {
@@ -243,7 +249,8 @@ const BoardWorkspace = ({
       toast.error(result.message || "Erro ao renomear coluna.");
     }
   
-    setShowRenameColumnModal(false);
+    setRenameIndex(null);
+    setShowRenameModal(false);
     setIsRenamingColumn(false);
   };
   
@@ -254,7 +261,7 @@ const BoardWorkspace = ({
     setIsCreatingBoard(true);
 
     try {
-      const result = await createBoard(name);
+      const result = await createBoardService(name);
 
       if (result.success) {
         setBoards((prev) => [...prev, result.board]);
@@ -262,8 +269,8 @@ const BoardWorkspace = ({
       } else {
         toast.error(result.message || "Erro ao criar quadro.");
       }
-    } catch (error) {
-        const errorMessage = error.response?.data?.detail || "Erro ao criar quadro.";
+    } catch (_e) {
+        const errorMessage = _e.response?.data?.detail || "Erro ao criar quadro.";
         toast.error(errorMessage);
     } finally {
         setIsCreatingBoard(false);
@@ -303,7 +310,7 @@ const BoardWorkspace = ({
     setIsDeletingBoard(true);
 
     try {
-        const result = await deleteBoard(boardId);
+        const result = await deleteBoardService(boardId);
     
         if (result.success) {
           setBoards((prev) => prev.filter((_, i) => i !== deleteIndex));
@@ -314,8 +321,9 @@ const BoardWorkspace = ({
         } else {
           toast.error(result.message || "Erro ao excluir quadro.");
         }
-    } catch (error) {
-        toast.error("Erro ao excluir quadro.");
+    } catch (_e) {
+        const errorMessage = _e.response?.data?.detail || "Erro ao excluir quadro.";
+        toast.error(errorMessage);
     } finally {
         setShowDeleteModal(false);
         setIsDeletingBoard(false);
@@ -328,7 +336,7 @@ const BoardWorkspace = ({
 
     setIsRenamingBoard(true);
 
-    const result = await updateBoard(board.id, newName);
+    const result = await updateBoardService(board.id, newName);
   
     if (result.success) {
       setBoards((prev) => {
@@ -362,7 +370,7 @@ const BoardWorkspace = ({
     setIsCreatingColumn(true);
 
     try {
-      const result = await createColumn(board.id, columnName);
+      const result = await createColumnService(board.id, columnName);
 
       if (result.success && result.column) {
         const normalizedColumn = {
@@ -382,8 +390,8 @@ const BoardWorkspace = ({
         const errorMessage = result.message || "Erro desconhecido ao criar coluna.";
         toast.error(errorMessage);
       }
-    } catch (error) {
-      const errorMessage = error.response?.data?.detail || "Erro ao criar coluna.";
+    } catch (_e) {
+      const errorMessage = _e.response?.data?.detail || "Erro ao criar coluna.";
       toast.error(errorMessage);
     } finally {
       setIsCreatingColumn(false);
@@ -409,133 +417,70 @@ const BoardWorkspace = ({
         return;
       }
 
-      if (cardData.id) {
-        let columnIndex = cardData.columnIndex;
-        if (columnIndex === undefined || columnIndex === null) {
-          columnIndex = board.columns.findIndex((col) =>
-            col.cards.some((card) => card.id === cardData.id)
-          );
-        }
-        
-        if (columnIndex === -1) {
-          toast.error("Coluna do cartão não encontrada.");
-          return;
-        }
-        
-        const currentColumnId = board.columns[columnIndex].id;
+      const column = board.columns[columnToAddCard];
+      const result = await createTaskService({
+        board_id: Number(board.id.replace('board-', '')),
+        column_id: Number(column.id.replace('col-', '')),
+        title: cardData.title,
+        description: cardData.description || null,
+        due_date: cardData.dueDate || null,
+      });
 
-        const payload = {
-          board_id: Number(board.id.toString().replace('col-', '')),
-          column_id: Number(currentColumnId.replace('col-', '')),
-          old_column_id: Number(currentColumnId.replace('col-', '')),
-          task_id: Number(cardData.id.toString().replace('card-', '')),
-          title: cardData.title,
-          description: cardData.description,
-          due_date: cardData.dueDate === '' ? null : cardData.dueDate,
+      if (result.id) {
+        const normalizedCard = {
+          ...result,
+          id: `card-${result.id}`,
         };
 
-        await updateTask(payload);
-  
-        const cards = board.columns[columnIndex].cards;
-        const cardIndex = cards.findIndex((c) => c.id === cardData.id);
-  
-        if (cardIndex !== -1) {
-          cards[cardIndex] = {
-            ...cards[cardIndex],
-            title: cardData.title,
-            description: cardData.description,
-            dueDate: cardData.dueDate,
-          };
-          toast.success("Cartão atualizado com sucesso!");
-        } else {
-          toast.warn("Cartão não encontrado para atualização.");
-        }
-  
-      } else {
-        const columnIndex = columnToAddCard;
-        const payload = {
-          board_id: Number(board.id.toString().replace('col-', '')),
-          column_id: Number(board.columns[columnIndex].id.replace('col-', '')),
-          title: cardData.title,
-          description: cardData.description,
-          due_date: cardData.dueDate === '' ? null : cardData.dueDate,
-        };
-  
-        const created = await createTask(payload);
-  
-        const newCard = {
-          id: String(created.id),
-          title: created.title,
-          description: created.description,
-          dueDate: created.due_date,
-          createdAt: created.created_at,
-        };
-  
-        board.columns[columnIndex].cards.push(newCard);
+        setBoards((prevBoards) => {
+          const updated = structuredClone(prevBoards);
+          updated[selectedBoardIndex].columns[columnToAddCard].cards.push(normalizedCard);
+          return updated;
+        });
         toast.success("Cartão criado com sucesso!");
+      } else {
+        toast.error("Erro ao criar cartão.");
       }
-  
-      setBoards(updatedBoards);
-      setCardToEdit(null);
-      setShowCreateCardModal(false);
-    } catch (error) {
-      const errorMessage = error.response?.data?.detail || "Erro ao salvar o cartão.";
+    } catch (_e) {
+      const errorMessage = _e.response?.data?.detail || 'Erro ao criar cartão.';
       toast.error(errorMessage);
     } finally {
       setIsSavingCard(false);
       setShowCreateCardModal(false);
     }
   };
-  
-
-
-  const handleDeleteCard = (card) => {
-    setCardToDelete(card);
-    setShowDeleteCardConfirmModal(true);
-  };
 
   const confirmDeleteCard = async () => {
-    if (!cardToDelete || cardToDelete.columnIndex === undefined || cardToDelete.id === undefined) {
-        toast.error("Erro interno ao tentar excluir cartão. Por favor, tente novamente.");
-        setCardToDelete(null);
-        setShowDeleteCardConfirmModal(false);
-        setShowCreateCardModal(false);
-        setCardToEdit(null);
-        return;
-    }
+    if (!cardToDelete) return;
 
-    const updatedBoards = structuredClone(boards);
-    const board = updatedBoards[selectedBoardIndex];
-    const columnIndex = cardToDelete.columnIndex;
+    const board = boards[selectedBoardIndex];
+    const column = board.columns[cardToDelete.columnIndex];
 
-     if (!board || !board.columns || !board.columns[columnIndex]) {
-        toast.error("Erro interno ao tentar excluir cartão. Por favor, tente novamente.");
-        setCardToDelete(null);
-        setShowDeleteCardConfirmModal(false);
-        setShowCreateCardModal(false);
-        setCardToEdit(null); 
-        return;
-    }
-  
     setIsDeletingCard(true);
 
     try {
-      const payload = {
-        board_id: Number(board.id.toString().replace('col-', '')),
-        column_id: Number(board.columns[columnIndex].id.replace('col-', '')),
-        task_id: Number(cardToDelete.id.toString().replace('card-', '')), 
-      };
-  
-      await deleteTask(payload);
-  
-      board.columns[columnIndex].cards = board.columns[columnIndex].cards.filter(
-        (c) => c.id !== cardToDelete.id
-      );
-  
-      setBoards(updatedBoards);
-      toast.success("Cartão excluído com sucesso!");
-    } catch (error) {
-      toast.error("Erro ao excluir o cartão.");
+      const result = await deleteTaskService({
+        board_id: Number(board.id.replace('board-', '')),
+        column_id: Number(column.id.replace('col-', '')),
+        task_id: Number(cardToDelete.id.replace('card-', '')),
+      });
+
+      if (result.message === 'Task deleted successfully') {
+        setBoards((prevBoards) => {
+          const updated = structuredClone(prevBoards);
+          updated[selectedBoardIndex].columns[cardToDelete.columnIndex].cards =
+            updated[selectedBoardIndex].columns[cardToDelete.columnIndex].cards.filter(
+              (card) => card.id !== cardToDelete.id
+            );
+          return updated;
+        });
+        toast.success("Cartão excluído com sucesso!");
+      } else {
+        toast.error(result.message || "Erro ao excluir cartão.");
+      }
+    } catch (e) {
+      const errorMessage = e.response?.data?.detail || 'Erro ao excluir cartão.';
+      toast.error(errorMessage);
     } finally {
       setCardToDelete(null);
       setShowDeleteCardConfirmModal(false);
@@ -546,86 +491,103 @@ const BoardWorkspace = ({
   };  
 
   const handleDragEnd = async (result) => {
-    const { source, destination } = result;
+    const { source, destination, draggableId } = result;
+
     if (!destination) return;
+
     if (
       source.droppableId === destination.droppableId &&
       source.index === destination.index
-    ) return;
+    ) {
+      return;
+    }
 
-    const updatedBoards = structuredClone(boards);
-    const board = updatedBoards[selectedBoardIndex];
-
-    const sourceColId = Number(source.droppableId.replace('col-', ''));
-    const destColId = Number(destination.droppableId.replace('col-', ''));
-
-    const sourceColIndex = board.columns.findIndex(
-      (col) => Number(col.id.replace('col-', '')) === sourceColId
+    const board = boards[selectedBoardIndex];
+    const sourceColumn = board.columns.find(
+      (col) => col.id === source.droppableId
     );
-    const destColIndex = board.columns.findIndex(
-      (col) => Number(col.id.replace('col-', '')) === destColId
+    const destColumn = board.columns.find(
+      (col) => col.id === destination.droppableId
     );
 
-    if (sourceColIndex === -1 || destColIndex === -1) return;
+    if (!sourceColumn || !destColumn) {
+      console.error('Coluna não encontrada:', { sourceColumn, destColumn });
+      return;
+    }
 
-    const sourceCol = board.columns[sourceColIndex];
-    const destCol = board.columns[destColIndex];
+    const card = sourceColumn.cards.find((c) => c.id === draggableId);
+    if (!card) {
+      console.error('Card não encontrado:', { card, draggableId });
+      return;
+    }
 
-    const [movedCard] = sourceCol.cards.splice(source.index, 1);
-    if (!movedCard) return;
+    try {
+      const result = await updateTaskService(card.id, {
+        column_id: destColumn.id,
+        position: destination.index,
+      });
 
-    movedCard.column_id = Number(destColId); 
+      if (result.success) {
+        setBoards((prevBoards) => {
+          const updatedBoards = structuredClone(prevBoards);
+          const boardIndex = selectedBoardIndex;
+          const sourceColIndex = updatedBoards[boardIndex].columns.findIndex(
+            (col) => col.id === source.droppableId
+          );
+          const destColIndex = updatedBoards[boardIndex].columns.findIndex(
+            (col) => col.id === destination.droppableId
+          );
 
-    destCol.cards.splice(destination.index, 0, movedCard);
+          // Remove o card da coluna de origem
+          const [movedCard] = updatedBoards[boardIndex].columns[sourceColIndex].cards.splice(
+            source.index,
+            1
+          );
 
-    setBoards(updatedBoards);
+          // Adiciona o card na coluna de destino
+          updatedBoards[boardIndex].columns[destColIndex].cards.splice(
+            destination.index,
+            0,
+            movedCard
+          );
 
-
-    if (sourceColId !== destColId) {
-      try {
-        const cardId = Number(movedCard.id.replace('card-', ''));
-        const oldColumnIdToSend = Number(source.droppableId.replace('col-', ''));
-
-        await updateTask({
-          board_id: Number(board.id),
-          task_id: cardId,
-          old_column_id: oldColumnIdToSend,
-          column_id: Number(destColId), 
-          title: movedCard.title ?? '',
-          description: movedCard.description ?? '',
-          due_date: movedCard.dueDate ?? null,
+          return updatedBoards;
         });
-      } catch (error) {
-        const errorMessage = error.response?.data?.detail || 'Erro desconhecido ao mover o card.';
-        toast.error(`Não foi possível mover o card: ${errorMessage}`);
-        const revertedBoards = structuredClone(boards);
-        setBoards(revertedBoards);
+      } else {
+        toast.error(result.message || 'Erro ao mover o card');
       }
+    } catch (error) {
+      console.error('Erro ao mover card:', error);
+      toast.error('Erro ao mover o card');
     }
   };
 
   const handleSelectBoard = async (index) => {
     setSelectedBoardIndex(index);
-  
     const board = boards[index];
-    const columns = await getBoardColumns(board.id);
+    
+    try {
+      const columns = await getBoardColumnsService(board.id);
+      
+      const normalizedColumns = columns.map((col) => ({
+        ...col,
+        id: String(col.id),
+        cards: col.cards.map((card) => ({
+          ...card,
+          id: String(card.id),
+        })),
+      }));
 
-  
-    const normalizedColumns = columns.map((col) => ({
-      ...col,
-      id: `col-${col.id}`, 
-      cards: col.cards?.map((card) => ({
-        ...card,
-        id: `card-${card.id}`,
-      })) || [],
-    }));
-  
-    setBoards((prevBoards) => {
-      const updated = [...prevBoards];
-      updated[index].columns = normalizedColumns;
-      return updated;
-    });
-  };  
+      setBoards((prevBoards) => {
+        const updatedBoards = structuredClone(prevBoards);
+        updatedBoards[index].columns = normalizedColumns;
+        return updatedBoards;
+      });
+    } catch (error) {
+      console.error('Erro ao carregar colunas:', error);
+      toast.error('Erro ao carregar colunas do quadro');
+    }
+  };
   
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -737,57 +699,65 @@ const BoardWorkspace = ({
           <div className={styles.sidebarSection}>
             <p className={styles.sectionLabel}>Meus Quadros</p>
             <ul className={styles.boardList}>
-              {boards.map((board, index) => (
-                <li
-                  key={index}
-                  className={`${styles.boardItem} ${selectedBoardIndex === index ? styles.activeBoard : ""
-                    }`}
-                >
-<div
-  className={styles.boardContent}
-  onClick={() => handleSelectBoard(index)}
->
-                    <span className={styles.pinIcon}>📌</span>
-                    {board.name}
-                  </div>
-                  {allowEditBoard || allowDeleteBoard && (
-                    <div className={styles.boardMenu}>
-                      <FaEllipsisH onClick={(e) => handleMenuToggle(index, e)} />
+              {loading ? (
+                <li>Carregando...</li>
+              ) : boards.length > 0 ? (
+                boards.map((board, index) => (
+                  <li
+                    key={board.id}
+                    className={`${styles.boardItem} ${index === selectedBoardIndex ? styles.activeBoard : ""
+                      }`}
+                    onClick={() => handleSelectBoard(index)}
+                  >
+                    <div className={styles.boardContent}>
+                      <FaPen size={12} className={styles.pinIcon} color="#3a86ff" />
+                      <span>{board.name}</span>
                     </div>
-                  )}
-                  {activeMenuIndex === index && (
-                    <MenuPortal>
-                      <div
-                        ref={boardDropdownRef}
-                        className={styles.dropdownMenu}
-                        style={{
-                          top: menuPosition.top,
-                          left: menuPosition.left,
-                          position: "fixed",
-                          zIndex: 9999,
-                        }}
+
+                    {allowEditBoard || allowDeleteBoard && (
+                      <span
+                        className={styles.boardMenu}
+                        onClick={(e) => handleMenuToggle(index, e)}
                       >
-                        {allowEditBoard && (
-                          <button onClick={() => handleRename(index)}>
-                            <FaPen size={12} /> Renomear
-                          </button>
-                        )}
-                        {allowDeleteBoard && (
-                          <button onClick={() => handleDelete(index)}>
-                            <FaTrashAlt size={12} /> Excluir
-                          </button>
-                        )}
-                      </div>
-                    </MenuPortal>
-                  )}
-                </li>
-              ))}
+                        <FaEllipsisH size={14} color="#555" />
+                      </span>
+                    )}
+                  </li>
+                ))
+              ) : (
+                <li>Nenhum quadro disponível.</li>
+              )}
             </ul>
+            {activeMenuIndex !== null && (
+              <MenuPortal>
+                <div
+                  ref={boardDropdownRef}
+                  className={styles.dropdownMenu}
+                  style={{
+                    top: menuPosition.top,
+                    left: menuPosition.left,
+                    position: "fixed",
+                    zIndex: 9999,
+                  }}
+                >
+                  {allowEditBoard && (
+                    <button onClick={() => handleRename(activeMenuIndex)}>
+                      <FaPen size={12} style={{ marginRight: "6px" }} />
+                      Renomear
+                    </button>
+                  )}
+                  {allowDeleteBoard && (
+                    <button onClick={() => handleDelete(activeMenuIndex)}>
+                      <FaTrashAlt size={12} style={{ marginRight: "6px" }} />
+                      Excluir
+                    </button>
+                  )}
+                </div>
+              </MenuPortal>
+            )}
+
             {allowAddBoard && (
-              <button
-                className={styles.addBoardBtn}
-                onClick={() => setShowModal(true)}
-              >
+              <button className={styles.addBoardBtn} onClick={() => setShowModal(true)}>
                 <FaPlus size={12} style={{ marginRight: "6px" }} />
                 Novo Quadro
               </button>
@@ -1011,35 +981,26 @@ const BoardWorkspace = ({
         />
       )}
 
-      {showCreateCardModal && (
+      {showCreateCardModal && columnToAddCard !== null && (
         <CreateCardModal
-          onClose={() => {
-            setShowCreateCardModal(false);
-            setCardToEdit(null);
-          }}
+          onClose={() => setShowCreateCardModal(false)}
           onCreate={handleCreateCard}
-          onDelete={handleDeleteCard}
-          card={cardToEdit}
-          isEditing={!!cardToEdit}
           loading={isSavingCard}
-          isDeleting={isDeletingCard}
+          cardToEdit={cardToEdit}
+          isEdit={!!cardToEdit}
         />
       )}
 
       {showDeleteCardConfirmModal && (
         <DeleteCardConfirmModal
-          cardTitle={cardToDelete?.title}
-          onCancel={() => {
-            setShowDeleteCardConfirmModal(false);
-            setCardToDelete(null);
-          }}
+          cardName={cardToDelete?.title || 'este cartão'}
+          onCancel={() => setShowDeleteCardConfirmModal(false)}
           onConfirm={confirmDeleteCard}
           loading={isDeletingCard}
         />
       )}
-
     </div>
   );
-};
+}
 
 export default BoardWorkspace;
