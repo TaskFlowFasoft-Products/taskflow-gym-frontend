@@ -25,68 +25,64 @@
     font-size: 1.6rem;
     font-weight: bold;
     text-align: center;
-    margin-top: -0.5rem;       /* sobe um pouco o título */
-    margin-bottom: 2.5rem;     /* aumenta o espaço abaixo */
+    margin-top: -0.5rem;
+    margin-bottom: 2.5rem;
     color: #333;
   }
   
-  
-  .formGroup label {
-    display: block;
-    text-align: left;
-    font-weight: 600;
-    margin-bottom: 0.3rem;
-    color: #444;
+  .description {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      color: #555;
+      font-size: 0.95rem;
   }
   
-  .formGroup label {
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-    color: #333;
+  .daysGrid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 2rem;
   }
   
-  .formGroup input,
-  .formGroup textarea,
-  .formGroup select {
-    width: 100%;
-    padding: 10px 12px;
-    font-size: 1rem;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    background-color: #f9f9f9;
-    box-sizing: border-box;
-    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-  }
-  
-  .formGroup input:focus,
-  .formGroup textarea:focus,
-  .formGroup select:focus {
-    outline: none;
-    border-color: #3a86ff;
-    box-shadow: 0 0 0 2px rgba(58, 134, 255, 0.2);
-  }
-  
-  .inputError {
-      border-color: #FF6B6B !important;
-      box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2) !important;
-  }
-  
-  .inputError:focus {
-      border-color: #ff4d4f !important;
-      box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2) !important;
-  }
-  
-  .errorMessage {
-      color: #ff4d4f;
-      font-size: 0.85rem;
-      margin-top: 0.25rem;
-      display: block;
+  .dayItem {
+      display: flex;
+      align-items: center;
+      background-color: #f0f4f8;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
       font-weight: 500;
+      color: #333;
+      white-space: nowrap;
   }
   
-  .formGroup textarea {
-    resize: vertical;
-    min-height: 80px;
+  .dayItem input[type="checkbox"] {
+      margin-right: 0.75rem;
+      width: 18px;
+      height: 18px;
+      accent-color: #FF6B6B; /* Cor do checkbox quando selecionado */
+  }
+  
+  .dayItem:hover {
+      background-color: #e2eaf2;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  .dayItem input[type="checkbox"]:checked + span { /* Exemplo: estilizar texto ao checar */
+      color: #FF6B6B;
+  }
+  
+  .disabledDay {
+      opacity: 0.6;
+      cursor: not-allowed;
+      background-color: #e9ecef;
+      color: #888;
+  }
+  
+  .disabledDay:hover {
+      background-color: #e9ecef; /* Evita mudança de cor ao hover em desabilitado */
+      box-shadow: none;
   }
   
   .buttonGroup {
@@ -114,11 +110,11 @@
   }
   
   .createButton:hover {
-    background-color: #e06060;
+    background-color: #e06060; /* A shade of coral for hover */
   }
   
   .createButton:active {
-    background-color: #cc5454;
+    background-color: #cc5454; /* A darker shade for active */
   }
   
   .createButton:disabled {
@@ -144,5 +140,4 @@
       opacity: 1;
       transform: scale(1);
     }
-  }
-  
+  } 

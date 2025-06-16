@@ -11,24 +11,28 @@
     align-items: center;
     justify-content: center;
     z-index: 1000;
+    padding: 10px; /* Adicionado para evitar que o modal toque as bordas da tela */
+    box-sizing: border-box;
 }
 
 .modalContent {
     background-color: #f4f5f7;
-    padding: 2rem;
+    padding: 2rem; /* Padding uniforme para todos os lados do modal */
     border-radius: 12px;
-    max-width: 520px;
+    max-width: 450px; /* Reduzido o tamanho máximo */
     width: 100%;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     margin: auto;
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1rem; /* Reduzido o espaçamento entre os elementos */
     font-family: 'Inter', sans-serif;
+    max-height: 90vh; /* Altura máxima para permitir rolagem */
+    overflow-y: auto; /* Adiciona rolagem vertical quando o conteúdo excede o max-height */
 }
 
 .modalTitle {
-    font-size: 1.5rem;
+    font-size: 1.3rem; /* Tamanho da fonte ligeiramente menor */
     font-weight: 700;
     display: flex;
     align-items: center;
@@ -39,22 +43,24 @@
 .form {
     display: flex;
     flex-direction: column;
-    gap: 1.2rem;
+    gap: 1.2rem; /* Aumentado o espaçamento entre os campos do formulário */
 }
 
 .label {
     font-weight: 600;
     color: #222;
+    margin-bottom: 0; /* Ajuste para aproximar o label do input */
 }
 
 .input {
     width: 100%;
-    padding: 10px 12px;
+    padding: 8px 10px; /* Padding ligeiramente menor */
     border: 1px solid #ccc;
     border-radius: 8px;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     background-color: #fff;
     transition: all 0.2s ease;
+    box-sizing: border-box; /* Garante que padding e border estejam inclusos na largura */
 }
 
 .input:focus {
@@ -64,7 +70,7 @@
 }
 
 .inputError {
-    border-color: #ff4d4f !important;
+    border-color: #FF6B6B;
     box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2) !important;
 }
 
@@ -75,38 +81,48 @@
 
 .errorMessage {
     color: #ff4d4f;
-    font-size: 0.85rem;
-    margin-top: -12px;
-    margin-bottom: 16px;
+    font-size: 0.85rem; /* Tamanho da fonte ligeiramente maior */
+    margin-top: 8px; /* Ajustado para garantir espaço e evitar corte */
+    margin-bottom: 15px; /* Ajustado para garantir espaço */
     display: block;
     font-weight: 500;
+    word-break: break-word; /* Garante que o texto quebre a linha */
+    white-space: normal; /* Garante que o texto quebre a linha */
 }
 
 .textarea {
     padding: 0.75rem;
-    min-height: 120px;
+    min-height: 80px; /* Altura mínima reduzida */
     border-radius: 8px;
     border: none;
-    font-size: 1rem;
+    font-size: 0.9rem;
     resize: vertical;
     width: 100%;
+    box-sizing: border-box; /* Garante que padding e border estejam inclusos na largura */
 }
 
 .buttonGroup {
     display: flex;
     justify-content: flex-end;
-    gap: 1rem;
+    gap: 0.8rem; /* Espaçamento entre botões ligeiramente menor */
+    margin-top: 3rem; /* Aumentado a margem superior para separar dos campos */
 }
 
-.cancelBtn {
-    background-color: #e0e0e0; /* Cor neutra */
-    color: #333; /* Cor do texto escura */
-    padding: 10px 16px;
-    font-size: 0.95rem;
+.cancelBtn,
+.deleteBtn,
+.saveBtn {
+    padding: 8px 14px; /* Padding ligeiramente menor */
+    font-size: 0.9rem; /* Tamanho da fonte ligeiramente menor */
     border: none;
     border-radius: 8px;
     cursor: pointer;
     transition: background-color 0.2s ease;
+    white-space: nowrap; /* Impede que o texto quebre em várias linhas */
+}
+
+.cancelBtn {
+    background-color: #e0e0e0;
+    color: #333;
 }
 
 .cancelBtn:hover {
@@ -116,12 +132,6 @@
 .deleteBtn {
     background-color: #e76f51;
     color: white;
-    padding: 10px 16px;
-    font-size: 0.95rem;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
 }
 
 .deleteBtn:hover {
@@ -129,49 +139,89 @@
 }
 
 .saveBtn {
-    background-color: #3a86ff;
-    color: #fff;
-    padding: 10px 16px;
-    font-size: 0.95rem;
-    border: none;
+    background-color: #FF6B6B;
+    color: white;
+}
+
+.saveBtn:hover:not(:disabled) {
+    background-color: #e06060;
+}
+
+.saveBtn:active:not(:disabled) {
+    background-color: #cc5454;
+}
+
+/* Novos estilos para a pré-visualização e botões de imagem */
+.imagePreviewContainer {
+    display: flex;
+    flex-direction: column; /* Manter coluna para a imagem e o grupo de botões */
+    align-items: center;
+    gap: 15px; /* Espaço maior entre imagem e botões */
+    margin-top: 15px;
+    border: 1px dashed #ccc;
+    padding: 15px;
     border-radius: 8px;
+    background-color: #f9f9f9;
+}
+
+.imagePreview {
+    max-width: 120px; /* Largura máxima da imagem */
+    max-height: 120px; /* Altura máxima da imagem */
+    width: auto;
+    height: auto;
+    object-fit: contain; /* Garante que a imagem seja contida sem cortar */
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.imageActionButtons {
+    display: flex;
+    gap: 10px; /* Espaço entre os botões de ação da imagem */
+    justify-content: center;
+    width: 100%; /* Ocupa a largura total do container */
+}
+
+.removeImageBtn,
+.downloadImageBtn {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    border: none;
+    border-radius: 6px;
     cursor: pointer;
     transition: background-color 0.2s ease;
+    white-space: nowrap;
+    text-decoration: none; /* Para o botão de download */
+    display: inline-flex; /* Para alinhar ícones e texto, se houver */
+    align-items: center;
+    justify-content: center;
+    flex-grow: 1; /* Para que os botões se expandam e ocupem o espaço disponível */
+    max-width: 150px; /* Limite máximo para a largura dos botões */
 }
 
-
-.saveBtn:hover {
-    background-color: #2f6cd8;
+.removeImageBtn {
+    background-color: #e76f51;
+    color: white;
 }
 
-.saveBtn:active {
-    transform: scale(0.98);
+.removeImageBtn:hover {
+    background-color: #d55f43;
 }
 
-.form label {
-    font-size: 0.95rem;
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-    color: #333;
-    display: block;
+.downloadImageBtn {
+    background-color: #28a745;
+    color: white;
 }
 
-.form input,
-.form textarea {
-    width: 100%;
-    box-sizing: border-box;
-    /* ESSENCIAL */
-    padding: 10px 12px;
-    font-size: 0.95rem;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    background-color: #fff;
-    resize: none;
+.downloadImageBtn:hover {
+    background-color: #218838;
 }
 
-.form input:focus,
-.form textarea:focus {
-    outline: none;
-    border-color: #3a86ff;
-    box-shadow: 0 0 0 2px rgba(58, 134, 255, 0.2);
+/* Estilo para agrupar campos lado a lado em cards de cardio */
+.cardioFieldsContainer {
+    display: flex;
+    gap: 2rem;
+}
+
+.cardioFieldsContainer > div {
+    flex: 1; /* Faz com que cada campo ocupe o mesmo espaço */
 }

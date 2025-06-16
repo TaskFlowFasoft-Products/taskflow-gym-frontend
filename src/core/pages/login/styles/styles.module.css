@@ -45,7 +45,7 @@
 
 .divider {
   width: 8px;
-  background-color: #3a86ff;
+  background-color: #FF6B6B;
   margin: 2rem 0;
 }
 
@@ -84,7 +84,7 @@
 .loginButton {
   font-family: "Inter", sans-serif;
   flex: 1;
-  background-color: #3a86ff;
+  background-color: #FF6B6B;
   color: white;
   padding: 0.9rem;
   border: none;
@@ -97,7 +97,7 @@
 }
 
 .loginButton:hover {
-  background-color: #2667cc;
+  background-color: #e06060;
 }
 
 .registerButton {
@@ -178,8 +178,8 @@
 
 .formGroup input:focus {
   outline: none;
-  border-color: #3a86ff;
-  box-shadow: 0 0 0 3px rgba(58, 134, 255, 0.15);
+  border-color: #FF6B6B;
+  box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.15);
   background-color: #fff;
 }
 
@@ -199,7 +199,7 @@
 }
 
 .formGroup input:required {
-  border-left: 2px solid #3a86ff;
+  border-left: 2px solid #FF6B6B;
 }
 
 .formGroup label {
@@ -220,13 +220,13 @@
 .forgotLink {
   font-family: "Inter", sans-serif;
   font-size: 1rem;
-  color: #3a86ff;
+  color: #FF6B6B;
   text-decoration: none;
   transition: color 0.2s, text-decoration 0.2s;
 }
 
 .forgotLink:hover {
-  color: #2667cc;
+  color: #cc5454;
   text-decoration: underline;
 }
 
@@ -312,3 +312,33 @@
 /* ---------------------------------------------------------------------- */
 
 /* ---------------------------------------------------- */
+
+.loginContainer button:hover {
+  background-color: #e06060;
+}
+
+.loginContainer button:active {
+  background-color: #cc5454;
+}
+
+.registerLink {
+  color: #FF6B6B;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.inputError {
+  border-color: #FF6B6B;
+}
+
+.errorMessage {
+  border-left: 2px solid #FF6B6B;
+}
+
+.socialLoginButton:hover {
+  background-color: #e06060;
+}
+
+.socialLoginButton:active {
+  background-color: #cc5454;
+}

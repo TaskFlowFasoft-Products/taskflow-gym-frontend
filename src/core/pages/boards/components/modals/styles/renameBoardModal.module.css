@@ -52,13 +52,11 @@
 }
 
 .inputError {
-  border-color: #ff4d4f !important;
-  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2) !important;
+  border-color: #FF6B6B;
 }
 
 .inputError:focus {
-  border-color: #ff4d4f !important;
-  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2) !important;
+  border-color: #FF6B6B;
 }
 
 .errorMessage {
@@ -98,15 +96,39 @@
 }
 
 .confirmBtn {
-  background: #3a86ff;
+  background: #FF6B6B;
   color: white;
 }
 
 .confirmBtn:hover {
-  background: #2563eb;
+  background-color: #e06060;
+}
+
+.confirmBtn:active {
+  background-color: #cc5454;
 }
 
 .confirmBtn:disabled {
   background-color: #cccccc;
   cursor: not-allowed;
+}
+
+.saveButton {
+  width: 100%;
+  padding: 12px;
+  background: #FF6B6B;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.saveButton:hover {
+  background-color: #e06060;
+}
+
+.saveButton:active {
+  background-color: #cc5454;
 }

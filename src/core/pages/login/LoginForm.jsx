@@ -19,7 +19,7 @@ const LoginForm = () => {
 
   useEffect(() => {
     if (isAuthenticated()) {
-      navigate("/boards");
+      navigate("/gym");
     }
   }, [navigate]);
 
@@ -37,7 +37,7 @@ const LoginForm = () => {
         if (response.username) {
           localStorage.setItem("username", response.username);
         }
-        navigate("/boards");
+        navigate("/gym");
       } else {
         setErrorMsg(response.message || "Falha na autenticação.");
         setPassword(""); 
