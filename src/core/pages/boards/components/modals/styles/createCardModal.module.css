@@ -17,7 +17,7 @@
 
 .modalContent {
     background-color: #f4f5f7;
-    padding: 2rem; /* Padding uniforme maior para todos os lados */
+    padding: 2rem; /* Padding uniforme para todos os lados do modal */
     border-radius: 12px;
     max-width: 450px; /* Reduzido o tamanho máximo */
     width: 100%;
@@ -60,6 +60,7 @@
     font-size: 0.9rem;
     background-color: #fff;
     transition: all 0.2s ease;
+    box-sizing: border-box; /* Garante que padding e border estejam inclusos na largura */
 }
 
 .input:focus {
@@ -95,6 +96,7 @@
     font-size: 0.9rem;
     resize: vertical;
     width: 100%;
+    box-sizing: border-box; /* Garante que padding e border estejam inclusos na largura */
 }
 
 .buttonGroup {
@@ -215,7 +217,7 @@
 /* Estilo para agrupar campos lado a lado em cards de cardio */
 .cardioFieldsContainer {
     display: flex;
-    gap: 2rem; /* Aumentado o espaçamento entre os campos */
+    gap: 2rem;
 }
 
 .cardioFieldsContainer > div {
