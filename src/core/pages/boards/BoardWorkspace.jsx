@@ -50,6 +50,7 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
   const [showDeleteCardConfirmModal, setShowDeleteCardConfirmModal] = useState(false);
   const [cardToDelete, setCardToDelete] = useState(null);
   const [showCreateColumnsModal, setShowCreateColumnsModal] = useState(false);
+  const [availableDays, setAvailableDays] = useState([]);
 
   const [isSavingCard, setIsSavingCard] = useState(false);
   const [isCreatingBoard, setIsCreatingBoard] = useState(false);
@@ -731,6 +732,20 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
     return () => document.removeEventListener("mousedown", handleClickOutsideColumnMenu);
   }, [columnDropdownRef]);
 
+  const calculateAvailableDays = (columns) => {
+    const usedDays = columns.map(col => col.title);
+    return DAYS_OF_WEEK.filter(day => !usedDays.includes(day.name)).map(day => day.name);
+  };
+
+  useEffect(() => {
+    if (selectedBoardIndex !== null) {
+      const currentBoard = boards[selectedBoardIndex];
+      if (currentBoard) {
+        setAvailableDays(calculateAvailableDays(currentBoard.columns));
+      }
+    }
+  }, [selectedBoardIndex, boards]);
+
   const handleCreateColumnsByDays = async (days) => {
     const board = boards[selectedBoardIndex];
     if (!board) {
@@ -1023,38 +1038,42 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
                         );
                       })}
 
-                      <button
-                        className={styles.addColumnStyledBtn}
-                        onClick={() => {
-                          if (selectedBoardIndex !== null) {
-                            setShowCreateColumnsModal(true);
-                          } else {
-                            alert("Selecione ou crie um quadro primeiro.");
-                          }
-                        }}
-                      >
-                        <FaPlus size={10} style={{ marginRight: "6px" }} />
-                        Adicionar nova lista
-                      </button>
+                      {availableDays.length > 0 && (
+                        <button
+                          className={styles.addColumnStyledBtn}
+                          onClick={() => {
+                            if (selectedBoardIndex !== null) {
+                              setShowCreateColumnsModal(true);
+                            } else {
+                              alert("Selecione ou crie um quadro primeiro.");
+                            }
+                          }}
+                        >
+                          <FaPlus size={10} style={{ marginRight: "6px" }} />
+                          Adicionar nova lista
+                        </button>
+                      )}
                     </>
                   ) : (
                     <div className={styles.emptyBoard}>
                       <p className={styles.emptyText}>
                         Este quadro está vazio. <em>Comece criando as colunas por dias da semana.</em>
                       </p>
-                      <button
-                        className={styles.addColumnStyledBtn}
-                        onClick={() => {
-                          if (selectedBoardIndex !== null) {
-                            setShowCreateColumnsModal(true);
-                          } else {
-                            alert("Selecione ou crie um quadro primeiro.");
-                          }
-                        }}
-                      >
-                        <FaPlus size={10} style={{ marginRight: "6px" }} />
-                        Criar Colunas por Dia
-                      </button>
+                      {availableDays.length > 0 && (
+                        <button
+                          className={styles.addColumnStyledBtn}
+                          onClick={() => {
+                            if (selectedBoardIndex !== null) {
+                              setShowCreateColumnsModal(true);
+                            } else {
+                              alert("Selecione ou crie um quadro primeiro.");
+                            }
+                          }}
+                        >
+                          <FaPlus size={10} style={{ marginRight: "6px" }} />
+                          Criar Colunas por Dia
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
