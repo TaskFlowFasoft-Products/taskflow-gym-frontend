@@ -10,7 +10,6 @@ const CreateCardModal = ({
     isEditing = false,
     loading = false,
     isDeleting = false,
-    additionalFields = [],
     cardType = 'default',
 }) => {
     const [title, setTitle] = useState(card?.title || "");
@@ -93,94 +92,129 @@ const CreateCardModal = ({
                 </h2>
 
                 <form className={styles.form} onSubmit={handleSubmit}>
-                    <label className={styles.label}>Título*</label>
-                    <input
-                        type="text"
-                        className={`${styles.input} ${titleError ? styles.inputError : ''}`}
-                        value={title}
-                        onChange={(e) => {
-                            setTitle(e.target.value);
-                            if (e.target.value.trim()) setTitleError("");
-                        }}
-                        onBlur={(e) => validateTitle(e.target.value)}
-                        placeholder="Nome do Exercício"
-                        required
-                    />
-                    {titleError && <span className={styles.errorMessage}>{titleError}</span>}
+                    <div>
+                        <label className={styles.label}>Título*</label>
+                        <input
+                            type="text"
+                            className={`${styles.input} ${titleError ? styles.inputError : ''}`}
+                            value={title}
+                            onChange={(e) => {
+                                setTitle(e.target.value);
+                                if (e.target.value.trim()) setTitleError("");
+                            }}
+                            onBlur={(e) => validateTitle(e.target.value)}
+                            placeholder="Nome do Exercício"
+                            required
+                        />
+                        {titleError && <span className={styles.errorMessage}>{titleError}</span>}
+                    </div>
 
                     {cardType === 'musculacao' && (
                         <>
-                            <label className={styles.label}>Séries x Repetições</label>
-                            <input
-                                type="text"
-                                className={styles.input}
-                                value={setsReps}
-                                onChange={(e) => setSetsReps(e.target.value)}
-                                placeholder="Ex: 4x10"
-                            />
+                            <div>
+                                <label className={styles.label}>Séries x Repetições</label>
+                                <input
+                                    type="text"
+                                    className={styles.input}
+                                    value={setsReps}
+                                    onChange={(e) => setSetsReps(e.target.value)}
+                                    placeholder="Ex: 4x10"
+                                />
+                            </div>
 
-                            <label className={styles.label}>Grupo Muscular</label>
-                            <input
-                                type="text"
-                                className={styles.input}
-                                value={muscleGroup}
-                                onChange={(e) => setMuscleGroup(e.target.value)}
-                                placeholder="Ex: Peito"
-                            />
+                            <div>
+                                <label className={styles.label}>Grupo Muscular</label>
+                                <input
+                                    type="text"
+                                    className={styles.input}
+                                    value={muscleGroup}
+                                    onChange={(e) => setMuscleGroup(e.target.value)}
+                                    placeholder="Ex: Peito"
+                                />
+                            </div>
                         </>
                     )}
 
                     {cardType === 'cardio' && (
                         <>
-                            <label className={styles.label}>Distância/Tempo</label>
-                            <input
-                                type="text"
-                                className={styles.input}
-                                value={distanceTime}
-                                onChange={(e) => setDistanceTime(e.target.value)}
-                                placeholder="Ex: 5km ou 30min"
-                            />
-
-                            <label className={styles.label}>Pace/Velocidade</label>
-                            <input
-                                type="text"
-                                className={styles.input}
-                                value={paceSpeed}
-                                onChange={(e) => setPaceSpeed(e.target.value)}
-                                placeholder="Ex: 5:00 min/km ou 12 km/h"
-                            />
-
-                            <label className={styles.label}>Upload de Print</label>
-                            <input
-                                type="file"
-                                className={styles.input}
-                                onChange={(e) => {
-                                    const file = e.target.files[0];
-                                    if (file) {
-                                        const reader = new FileReader();
-                                        reader.onloadend = () => {
-                                            setRunScreenshotBase64(reader.result);
-                                        };
-                                        reader.readAsDataURL(file);
-                                    } else {
-                                        setRunScreenshotBase64(null);
-                                    }
-                                }}
-                                accept="image/*"
-                            />
+                            <div className={styles.cardioFieldsContainer}>
+                                <div>
+                                    <label className={styles.label}>Distância/Tempo</label>
+                                    <input
+                                        type="text"
+                                        className={styles.input}
+                                        value={distanceTime}
+                                        onChange={(e) => setDistanceTime(e.target.value)}
+                                        placeholder="Ex: 5km ou 30min"
+                                    />
+                                </div>
+                                <div>
+                                    <label className={styles.label}>Pace/Velocidade</label>
+                                    <input
+                                        type="text"
+                                        className={styles.input}
+                                        value={paceSpeed}
+                                        onChange={(e) => setPaceSpeed(e.target.value)}
+                                        placeholder="Ex: 5:00 min/km ou 12 km/h"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className={styles.label}>Upload de Print</label>
+                                <input
+                                    type="file"
+                                    className={styles.input}
+                                    onChange={(e) => {
+                                        const file = e.target.files[0];
+                                        if (file) {
+                                            const reader = new FileReader();
+                                            reader.onloadend = () => {
+                                                setRunScreenshotBase64(reader.result);
+                                            };
+                                            reader.readAsDataURL(file);
+                                        } else {
+                                            setRunScreenshotBase64(null);
+                                        }
+                                    }}
+                                    accept="image/*"
+                                />
+                                {runScreenshotBase64 && (
+                                    <div className={styles.imagePreviewContainer}>
+                                        <img src={runScreenshotBase64} alt="Pré-visualização do Print" className={styles.imagePreview} />
+                                        <div className={styles.imageActionButtons}>
+                                            <button
+                                                type="button"
+                                                className={styles.removeImageBtn}
+                                                onClick={() => setRunScreenshotBase64(null)}
+                                            >
+                                                Remover Print
+                                            </button>
+                                            <a
+                                                href={runScreenshotBase64}
+                                                download={`print_corrida_${card?.id || Date.now()}.jpeg`}
+                                                className={styles.downloadImageBtn}
+                                            >
+                                                Baixar Print
+                                            </a>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </>
                     )}
 
-                    <label className={styles.label}>Sensação (RPE 1-10)</label>
-                    <input
-                        type="number"
-                        className={styles.input}
-                        value={rpeScale}
-                        onChange={(e) => setRpeScale(e.target.value)}
-                        placeholder="Ex: 8"
-                        min="1"
-                        max="10"
-                    />
+                    <div>
+                        <label className={styles.label}>Sensação (RPE 1-10)</label>
+                        <input
+                            type="number"
+                            className={styles.input}
+                            value={rpeScale}
+                            onChange={(e) => setRpeScale(e.target.value)}
+                            placeholder="Ex: 8"
+                            min="1"
+                            max="10"
+                        />
+                    </div>
 
                     <div className={styles.buttonGroup}>
                         {isEditing ? (

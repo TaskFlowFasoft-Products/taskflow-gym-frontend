@@ -709,6 +709,7 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
           rpe_scale: card.rpe_scale,
           distance_time: card.distance_time,
           pace_speed: card.pace_speed,
+          run_screenshot_base64: card.run_screenshot_base64,
           createdAt: card.created_at
         })) || [],
       }));
