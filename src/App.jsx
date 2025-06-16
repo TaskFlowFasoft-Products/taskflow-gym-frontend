@@ -8,6 +8,7 @@ import "react-toastify/dist/ReactToastify.css";
 const Login = lazy(() => import('./core/pages/login'));
 const BoardWorkspace = lazy(() => import('./core/pages/boards/BoardWorkspace'));
 const ProtectedRoute = lazy(() => import('./core/components/ProtectedRoute'));
+const GymBoardWorkspace = lazy(() => import('./gym/GymBoardWorkspace'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -32,6 +33,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <BoardWorkspace />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/gym"
+            element={
+              <ProtectedRoute>
+                <GymBoardWorkspace />
               </ProtectedRoute>
             }
           />

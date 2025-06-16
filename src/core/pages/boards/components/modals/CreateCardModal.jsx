@@ -10,12 +10,21 @@ const CreateCardModal = ({
     isEditing = false,
     loading = false,
     isDeleting = false,
+    additionalFields = [],
+    cardType = 'default',
 }) => {
     const [title, setTitle] = useState(card?.title || "");
     const [dueDate, setDueDate] = useState(card?.dueDate || "");
     const [description, setDescription] = useState(card?.description || "");
     const [titleError, setTitleError] = useState("");
     const modalRef = useRef();
+
+    const [setsReps, setSetsReps] = useState(card?.sets_reps || "");
+    const [distanceTime, setDistanceTime] = useState(card?.distance_time || "");
+    const [paceSpeed, setPaceSpeed] = useState(card?.pace_speed || "");
+    const [rpeScale, setRpeScale] = useState(card?.rpe_scale || "");
+    const [muscleGroup, setMuscleGroup] = useState(card?.muscle_group || "");
+    const [runScreenshotBase64, setRunScreenshotBase64] = useState(card?.run_screenshot_base64 || "");
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -48,6 +57,17 @@ const CreateCardModal = ({
             dueDate,
             description: description.trim(),
         };
+
+        if (cardType === 'musculacao') {
+          cardData.sets_reps = setsReps;
+          cardData.muscle_group = muscleGroup;
+          cardData.rpe_scale = rpeScale;
+        } else if (cardType === 'cardio') {
+          cardData.distance_time = distanceTime;
+          cardData.pace_speed = paceSpeed;
+          cardData.run_screenshot_base64 = runScreenshotBase64;
+          cardData.rpe_scale = rpeScale;
+        }
 
         onCreate(cardData);
     };
@@ -108,6 +128,82 @@ const CreateCardModal = ({
                         onChange={(e) => setDescription(e.target.value)}
                         placeholder="Escreva uma descrição..."
                     />
+
+                    {additionalFields.map((field) => {
+                        let value, onChangeHandler;
+                        switch (field.name) {
+                            case 'sets_reps':
+                                value = setsReps;
+                                onChangeHandler = (e) => setSetsReps(e.target.value);
+                                break;
+                            case 'distance_time':
+                                value = distanceTime;
+                                onChangeHandler = (e) => setDistanceTime(e.target.value);
+                                break;
+                            case 'pace_speed':
+                                value = paceSpeed;
+                                onChangeHandler = (e) => setPaceSpeed(e.target.value);
+                                break;
+                            case 'rpe_scale':
+                                value = rpeScale;
+                                onChangeHandler = (e) => setRpeScale(e.target.value);
+                                break;
+                            case 'muscle_group':
+                                value = muscleGroup;
+                                onChangeHandler = (e) => setMuscleGroup(e.target.value);
+                                break;
+                            case 'run_screenshot_base64':
+                                value = runScreenshotBase64;
+                                onChangeHandler = (e) => {
+                                    const file = e.target.files[0];
+                                    if (file) {
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => {
+                                            setRunScreenshotBase64(reader.result);
+                                        };
+                                        reader.readAsDataURL(file);
+                                    } else {
+                                        setRunScreenshotBase64("");
+                                    }
+                                };
+                                break;
+                            default:
+                                return null;
+                        }
+
+                        return (
+                            <div key={field.name}>
+                                <label className={styles.label}>{field.label}</label>
+                                {
+                                    field.type === 'textarea' ? (
+                                        <textarea
+                                            className={styles.textarea}
+                                            value={value}
+                                            onChange={onChangeHandler}
+                                            placeholder={field.placeholder}
+                                        />
+                                    ) : field.type === 'file' ? (
+                                        <input
+                                            type="file"
+                                            className={styles.input}
+                                            onChange={onChangeHandler}
+                                            accept={field.accept || '.png,.jpg,.jpeg'}
+                                        />
+                                    ) : (
+                                        <input
+                                            type={field.type || 'text'}
+                                            className={styles.input}
+                                            value={value}
+                                            onChange={onChangeHandler}
+                                            placeholder={field.placeholder}
+                                            min={field.min}
+                                            max={field.max}
+                                        />
+                                    )
+                                }
+                            </div>
+                        );
+                    })}
 
                     <div className={styles.buttonGroup}>
                         {isEditing ? (

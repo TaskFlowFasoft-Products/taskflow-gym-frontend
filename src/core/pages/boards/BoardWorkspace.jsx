@@ -9,7 +9,6 @@ import RenameColumnModal from "./components/modals/RenameColumnModal";
 import DeleteCardConfirmModal from "./components/modals/DeleteCardConfirmModal";
 import CreateCardModal from "./components/modals/CreateCardModal";
 import DeleteColumnConfirmModal from "./components/modals/DeleteColumnConfirmModal";
-import { getBoards } from "../../api/boardService";
 import MenuPortal from "../../components/MenuPortal";
 import {
   FaUserCircle,
@@ -23,19 +22,9 @@ import {
 import LogoIcon from "../../assets/Logo Icone.png";
 import { toast } from "react-toastify";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
-import { createBoard } from "../../api/boardService";
-import { deleteBoard } from "../../api/boardService"; 
-import { updateBoard } from "../../api/boardService";
-import { createColumn } from "../../api/columnService";
-import { updateColumn } from "../../api/columnService";
-import { deleteColumn } from "../../api/columnService";
-import { getBoardColumns } from "../../api/columnService";
-import { createTask } from "../../api/taskService";
-import { updateTask } from "../../api/taskService";
-import { deleteTask } from "../../api/taskService";
 
 
-const BoardWorkspace = () => {
+const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalFields: [], cardType: 'default' }), boardTemplates = [] }) => {
   const [boards, setBoards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -89,17 +78,24 @@ const BoardWorkspace = () => {
 
   useEffect(() => {
     const fetchBoards = async () => {
-      const data = await getBoards();
+      let data = [];
+      try {
+        data = await services.boardService.getBoards();
+      } catch (error) {
+        console.error("Erro ao carregar quadros:", error);
+        toast.error("Erro ao carregar quadros.");
+      }
   
       const normalizedBoards = data.map((board) => ({
         ...board,
-        id: String(board.id),
-        columns: board.columns.map((column) => ({
+        id: `board-${String(board.id || '').replace("undefined", '')}`,
+        name: board.name || board.title || '',
+        columns: (board.columns || []).map((column) => ({
           ...column,
-          id: String(column.id),
-          cards: column.cards.map((card) => ({
+          id: `col-${String(column.id || '').replace("undefined", '')}`,
+          cards: (column.cards || []).map((card) => ({
             ...card,
-            id: String(card.id),
+            id: `card-${String(card.id || '').replace("undefined", '')}`,
           })),
         })),
       }));
@@ -109,7 +105,7 @@ const BoardWorkspace = () => {
     };
   
     fetchBoards();
-  }, []);
+  }, [services.boardService]);
   
 
   useEffect(() => {
@@ -167,11 +163,22 @@ const BoardWorkspace = () => {
         setColumnMenu(null);
         return;
     }
+
+    const boardId = Number(String(board.id).replace('board-', '').replace('undefined', ''));
+    const columnId = Number(String(column.id).replace('col-', '').replace('undefined', ''));
+
+    if (isNaN(boardId) || isNaN(columnId)) {
+        console.error("ID do quadro ou coluna inválido para exclusão:", { boardId: board.id, columnId: column.id });
+        toast.error("Erro: ID do quadro ou coluna inválido para exclusão.");
+        setShowDeleteColumnModal(false);
+        setColumnMenu(null);
+        return;
+    }
   
     setIsDeletingColumn(true);
   
     try {
-        const result = await deleteColumn(board.id, column.id);
+        const result = await services.columnService.deleteColumn(boardId, columnId);
     
         if (result.success) {
           setBoards((prevBoards) => {
@@ -186,6 +193,7 @@ const BoardWorkspace = () => {
           toast.error(result.message || "Erro ao excluir coluna.");
         }
     } catch (error) {
+        console.error("Erro ao excluir coluna:", error);
         toast.error("Erro ao excluir coluna.");
     } finally {
         setShowDeleteColumnModal(false);
@@ -219,7 +227,7 @@ const BoardWorkspace = () => {
 
     setIsRenamingColumn(true);
   
-    const result = await updateColumn(board.id, column.id, newName);
+    const result = await services.columnService.updateColumn(board.id, column.id, newName);
   
     if (result.success) {
       setBoards((prev) => {
@@ -238,20 +246,31 @@ const BoardWorkspace = () => {
   
 
   const handleCreateBoard = async (newBoard) => {
-    const { name } = newBoard;
+    const { name, templateId } = newBoard;
 
     setIsCreatingBoard(true);
 
     try {
-      const result = await createBoard(name);
+      let result;
+      if (templateId) {
+        result = await services.boardService.createBoard(templateId);
+      } else {
+        result = await services.boardService.createBoard(name);
+      }
 
       if (result.success) {
-        setBoards((prev) => [...prev, result.board]);
+        setBoards((prev) => [...prev, {
+          ...result.board,
+          id: `board-${String(result.board.id || '').replace("undefined", '')}`,
+          name: result.board.name || result.board.title || '',
+          columns: result.board.columns || [],
+        }]);
         toast.success("Quadro criado com sucesso!");
       } else {
         toast.error(result.message || "Erro ao criar quadro.");
       }
     } catch (error) {
+        console.error("Erro ao criar quadro:", error);
         const errorMessage = error.response?.data?.detail || "Erro ao criar quadro.";
         toast.error(errorMessage);
     } finally {
@@ -281,10 +300,19 @@ const BoardWorkspace = () => {
   };
 
   const confirmDeleteBoard = async () => {
-    const boardId = boards[deleteIndex]?.id;
+    const boardIdWithPrefix = boards[deleteIndex]?.id;
 
-    if (!boardId) {
+    if (!boardIdWithPrefix) {
         toast.error("Erro: ID do quadro não encontrado para exclusão.");
+        setShowDeleteModal(false);
+        return;
+    }
+
+    const boardId = Number(String(boardIdWithPrefix).replace('board-', '').replace('undefined', ''));
+
+    if (isNaN(boardId)) {
+        console.error("ID do quadro inválido para exclusão:", boardIdWithPrefix);
+        toast.error("Erro: ID do quadro inválido para exclusão.");
         setShowDeleteModal(false);
         return;
     }
@@ -292,7 +320,7 @@ const BoardWorkspace = () => {
     setIsDeletingBoard(true);
 
     try {
-        const result = await deleteBoard(boardId);
+        const result = await services.boardService.deleteBoard(boardId);
     
         if (result.success) {
           setBoards((prev) => prev.filter((_, i) => i !== deleteIndex));
@@ -304,6 +332,7 @@ const BoardWorkspace = () => {
           toast.error(result.message || "Erro ao excluir quadro.");
         }
     } catch (error) {
+        console.error("Erro ao excluir quadro:", error);
         toast.error("Erro ao excluir quadro.");
     } finally {
         setShowDeleteModal(false);
@@ -317,7 +346,7 @@ const BoardWorkspace = () => {
 
     setIsRenamingBoard(true);
 
-    const result = await updateBoard(board.id, newName);
+    const result = await services.boardService.updateBoard(board.id, newName);
   
     if (result.success) {
       setBoards((prev) => {
@@ -351,12 +380,12 @@ const BoardWorkspace = () => {
     setIsCreatingColumn(true);
 
     try {
-      const result = await createColumn(board.id, columnName);
+      const result = await services.columnService.createColumn(board.id, columnName);
 
       if (result.success && result.column) {
         const normalizedColumn = {
           ...result.column,
-          id: String(result.column.id),
+          id: `col-${String(result.column.id || '').replace("undefined", '')}`,
           cards: [],
         };
 
@@ -414,16 +443,16 @@ const BoardWorkspace = () => {
         const currentColumnId = board.columns[columnIndex].id;
 
         const payload = {
-          board_id: Number(board.id.toString().replace('col-', '')),
-          column_id: Number(currentColumnId.replace('col-', '')),
-          old_column_id: Number(currentColumnId.replace('col-', '')),
-          task_id: Number(cardData.id.toString().replace('card-', '')),
+          board_id: Number(board.id.toString().replace('col-', '').replace('undefined', '')),
+          column_id: Number(currentColumnId.replace('col-', '').replace('undefined', '')),
+          old_column_id: Number(currentColumnId.replace('col-', '').replace('undefined', '')),
+          task_id: Number(cardData.id.toString().replace('card-', '').replace('undefined', '')),
           title: cardData.title,
           description: cardData.description,
           due_date: cardData.dueDate === '' ? null : cardData.dueDate,
         };
 
-        await updateTask(payload);
+        await services.taskService.updateTask(payload);
   
         const cards = board.columns[columnIndex].cards;
         const cardIndex = cards.findIndex((c) => c.id === cardData.id);
@@ -443,17 +472,17 @@ const BoardWorkspace = () => {
       } else {
         const columnIndex = columnToAddCard;
         const payload = {
-          board_id: Number(board.id.toString().replace('col-', '')),
-          column_id: Number(board.columns[columnIndex].id.replace('col-', '')),
+          board_id: Number(board.id.toString().replace('col-', '').replace('undefined', '')),
+          column_id: Number(board.columns[columnIndex].id.replace('col-', '').replace('undefined', '')),
           title: cardData.title,
           description: cardData.description,
           due_date: cardData.dueDate === '' ? null : cardData.dueDate,
         };
   
-        const created = await createTask(payload);
+        const created = await services.taskService.createTask(payload);
   
         const newCard = {
-          id: String(created.id),
+          id: `card-${String(created.id || '').replace("undefined", '')}`,
           title: created.title,
           description: created.description,
           dueDate: created.due_date,
@@ -462,12 +491,16 @@ const BoardWorkspace = () => {
   
         board.columns[columnIndex].cards.push(newCard);
         toast.success("Cartão criado com sucesso!");
+        if (created.warning) {
+          toast.warn(created.warning);
+        }
       }
   
       setBoards(updatedBoards);
       setCardToEdit(null);
       setShowCreateCardModal(false);
     } catch (error) {
+      console.error("Erro ao salvar o cartão:", error);
       const errorMessage = error.response?.data?.detail || "Erro ao salvar o cartão.";
       toast.error(errorMessage);
     } finally {
@@ -510,12 +543,12 @@ const BoardWorkspace = () => {
 
     try {
       const payload = {
-        board_id: Number(board.id.toString().replace('col-', '')),
-        column_id: Number(board.columns[columnIndex].id.replace('col-', '')),
-        task_id: Number(cardToDelete.id.toString().replace('card-', '')), 
+        board_id: Number(board.id.toString().replace('col-', '').replace('undefined', '')),
+        column_id: Number(board.columns[columnIndex].id.replace('col-', '').replace('undefined', '')),
+        task_id: Number(cardToDelete.id.toString().replace('card-', '').replace('undefined', '')),
       };
   
-      await deleteTask(payload);
+      await services.taskService.deleteTask(payload);
   
       board.columns[columnIndex].cards = board.columns[columnIndex].cards.filter(
         (c) => c.id !== cardToDelete.id
@@ -524,6 +557,7 @@ const BoardWorkspace = () => {
       setBoards(updatedBoards);
       toast.success("Cartão excluído com sucesso!");
     } catch (error) {
+      console.error("Erro ao excluir o cartão:", error);
       toast.error("Erro ao excluir o cartão.");
     } finally {
       setCardToDelete(null);
@@ -532,7 +566,7 @@ const BoardWorkspace = () => {
       setCardToEdit(null); 
       setIsDeletingCard(false);
     }
-  };  
+  };
 
   const handleDragEnd = async (result) => {
     const { source, destination } = result;
@@ -545,14 +579,14 @@ const BoardWorkspace = () => {
     const updatedBoards = structuredClone(boards);
     const board = updatedBoards[selectedBoardIndex];
 
-    const sourceColId = Number(source.droppableId.replace('col-', ''));
-    const destColId = Number(destination.droppableId.replace('col-', ''));
+    const sourceColId = Number(source.droppableId.replace('col-', '').replace('undefined', ''));
+    const destColId = Number(destination.droppableId.replace('col-', '').replace('undefined', ''));
 
     const sourceColIndex = board.columns.findIndex(
-      (col) => Number(col.id.replace('col-', '')) === sourceColId
+      (col) => Number(col.id.replace('col-', '').replace('undefined', '')) === sourceColId
     );
     const destColIndex = board.columns.findIndex(
-      (col) => Number(col.id.replace('col-', '')) === destColId
+      (col) => Number(col.id.replace('col-', '').replace('undefined', '')) === destColId
     );
 
     if (sourceColIndex === -1 || destColIndex === -1) return;
@@ -572,19 +606,20 @@ const BoardWorkspace = () => {
 
     if (sourceColId !== destColId) {
       try {
-        const cardId = Number(movedCard.id.replace('card-', ''));
-        const oldColumnIdToSend = Number(source.droppableId.replace('col-', ''));
+        const cardId = Number(movedCard.id.replace('card-', '').replace('undefined', ''));
+        const oldColumnIdToSend = Number(source.droppableId.replace('col-', '').replace('undefined', ''));
 
-        await updateTask({
-          board_id: Number(board.id),
+        await services.taskService.updateTask({
+          board_id: Number(board.id.replace('board-', '').replace('undefined', '')),
           task_id: cardId,
           old_column_id: oldColumnIdToSend,
-          column_id: Number(destColId), 
+          column_id: Number(destColId.replace('col-', '').replace('undefined', '')), 
           title: movedCard.title ?? '',
           description: movedCard.description ?? '',
           due_date: movedCard.dueDate ?? null,
         });
       } catch (error) {
+        console.error("Erro desconhecido ao mover o card:", error);
         const errorMessage = error.response?.data?.detail || 'Erro desconhecido ao mover o card.';
         toast.error(`Não foi possível mover o card: ${errorMessage}`);
         const revertedBoards = structuredClone(boards);
@@ -597,23 +632,46 @@ const BoardWorkspace = () => {
     setSelectedBoardIndex(index);
   
     const board = boards[index];
-    const columns = await getBoardColumns(board.id);
+    if (!board || !board.id) {
+      console.error('Quadro inválido:', board);
+      toast.error("Erro: Quadro selecionado inválido.");
+      return;
+    }
 
+    const boardIdString = String(board.id);
+    console.log('handleSelectBoard - Original board.id:', boardIdString);
+    const cleanedBoardIdString = boardIdString.replace('board-', '').replace('undefined', '');
+    console.log('handleSelectBoard - Cleaned boardIdString:', cleanedBoardIdString);
+    const boardId = Number(cleanedBoardIdString);
+    console.log('handleSelectBoard - Converted boardId:', boardId);
+    
+    if (isNaN(boardId)) {
+      console.error('ID do quadro inválido após conversão:', boardIdString, '->', cleanedBoardIdString, '->', boardId);
+      toast.error("Erro: ID do quadro selecionado inválido.");
+      return;
+    }
+
+    try {
+      const columns = await services.columnService.getBoardColumns(boardId);
   
-    const normalizedColumns = columns.map((col) => ({
-      ...col,
-      id: `col-${col.id}`, 
-      cards: col.cards?.map((card) => ({
-        ...card,
-        id: `card-${card.id}`,
-      })) || [],
-    }));
+      const normalizedColumns = columns.map((col) => ({
+        ...col,
+        id: `col-${String(col.id || '').replace("undefined", '')}`,
+        cards: (col.cards || []).map((card) => ({
+          ...card,
+          id: `card-${String(card.id || '').replace("undefined", '')}`,
+        })) || [],
+      }));
   
-    setBoards((prevBoards) => {
-      const updated = [...prevBoards];
-      updated[index].columns = normalizedColumns;
-      return updated;
-    });
+      setBoards((prevBoards) => {
+        const updated = [...prevBoards];
+        updated[index].columns = normalizedColumns;
+        return updated;
+      });
+    } catch (error) {
+        console.error("Erro ao carregar colunas do quadro:", error);
+        toast.error("Erro ao carregar colunas do quadro.");
+    }
   };  
   
   useEffect(() => {
@@ -940,6 +998,7 @@ const BoardWorkspace = () => {
           onClose={() => setShowModal(false)}
           onCreate={handleCreateBoard}
           loading={isCreatingBoard}
+          boardTemplates={boardTemplates}
         />
       )}
 
@@ -994,6 +1053,8 @@ const BoardWorkspace = () => {
           isEditing={!!cardToEdit}
           loading={isSavingCard}
           isDeleting={isDeletingCard}
+          additionalFields={getCardConfigForBoard().additionalFields}
+          cardType={getCardConfigForBoard().cardType}
         />
       )}
 
