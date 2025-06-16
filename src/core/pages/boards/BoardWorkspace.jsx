@@ -433,12 +433,13 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
 
     try {
       if (!cardData.title || cardData.title.trim() === '') {
-        toast.error('O título do cartão é obrigatório');
+        toast.error('O título do exercício é obrigatório');
         setIsSavingCard(false);
         return;
       }
 
       if (cardData.id) {
+        // Atualização de exercício existente
         let columnIndex = cardData.columnIndex;
         if (columnIndex === undefined || columnIndex === null) {
           columnIndex = board.columns.findIndex((col) =>
@@ -447,63 +448,98 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
         }
         
         if (columnIndex === -1) {
-          toast.error("Coluna do cartão não encontrada.");
+          toast.error("Coluna do exercício não encontrada.");
           return;
         }
         
-        const currentColumnId = board.columns[columnIndex].id;
-
         const payload = {
-          board_id: Number(board.id.toString().replace('col-', '').replace('undefined', '')),
-          column_id: Number(currentColumnId.replace('col-', '').replace('undefined', '')),
-          old_column_id: Number(currentColumnId.replace('col-', '').replace('undefined', '')),
           task_id: Number(cardData.id.toString().replace('card-', '').replace('undefined', '')),
+          board_id: Number(board.id.toString().replace('board-', '').replace('undefined', '')),
           title: cardData.title,
-          description: cardData.description,
-          due_date: cardData.dueDate === '' ? null : cardData.dueDate,
         };
 
-        await services.taskService.updateTask(payload);
+        // Adiciona campos específicos baseado no tipo de card
+        if (cardData.sets_reps !== undefined) payload.sets_reps = cardData.sets_reps;
+        if (cardData.muscle_group !== undefined) payload.muscle_group = cardData.muscle_group;
+        if (cardData.rpe_scale !== undefined) payload.rpe_scale = cardData.rpe_scale;
+        if (cardData.distance_time !== undefined) payload.distance_time = cardData.distance_time;
+        if (cardData.pace_speed !== undefined) payload.pace_speed = cardData.pace_speed;
+        if (cardData.run_screenshot_base64 !== undefined) payload.run_screenshot_base64 = cardData.run_screenshot_base64;
+
+        const result = await services.taskService.updateTask(payload);
   
-        const cards = board.columns[columnIndex].cards;
-        const cardIndex = cards.findIndex((c) => c.id === cardData.id);
+        if (result.success) {
+          const cards = board.columns[columnIndex].cards;
+          const cardIndex = cards.findIndex((c) => c.id === cardData.id);
   
-        if (cardIndex !== -1) {
-          cards[cardIndex] = {
-            ...cards[cardIndex],
-            title: cardData.title,
-            description: cardData.description,
-            dueDate: cardData.dueDate,
-          };
-          toast.success("Cartão atualizado com sucesso!");
+          if (cardIndex !== -1) {
+            cards[cardIndex] = {
+              ...cards[cardIndex],
+              title: cardData.title,
+              sets_reps: cardData.sets_reps,
+              muscle_group: cardData.muscle_group,
+              rpe_scale: cardData.rpe_scale,
+              distance_time: cardData.distance_time,
+              pace_speed: cardData.pace_speed,
+              run_screenshot_base64: cardData.run_screenshot_base64,
+            };
+            toast.success("Exercício atualizado com sucesso!");
+          } else {
+            toast.warn("Exercício não encontrado para atualização.");
+          }
         } else {
-          toast.warn("Cartão não encontrado para atualização.");
+          toast.error(result.message || "Erro ao atualizar exercício.");
         }
   
       } else {
+        // Criação de novo exercício
         const columnIndex = columnToAddCard;
+        const boardId = Number(String(board.id).replace('board-', '').replace('undefined', ''));
+        const columnId = Number(board.columns[columnIndex].id.replace('col-', '').replace('undefined', ''));
+        
+        if (isNaN(boardId) || isNaN(columnId)) {
+          console.error('IDs inválidos:', { boardId, columnId });
+          toast.error('Erro: IDs inválidos');
+          setIsSavingCard(false);
+          return;
+        }
+
         const payload = {
-          board_id: Number(board.id.toString().replace('col-', '').replace('undefined', '')),
-          column_id: Number(board.columns[columnIndex].id.replace('col-', '').replace('undefined', '')),
+          board_id: boardId,
+          column_id: columnId,
           title: cardData.title,
-          description: cardData.description,
-          due_date: cardData.dueDate === '' ? null : cardData.dueDate,
         };
+
+        // Adiciona campos específicos baseado no tipo de card
+        if (cardData.sets_reps !== undefined) payload.sets_reps = cardData.sets_reps;
+        if (cardData.muscle_group !== undefined) payload.muscle_group = cardData.muscle_group;
+        if (cardData.rpe_scale !== undefined) payload.rpe_scale = cardData.rpe_scale;
+        if (cardData.distance_time !== undefined) payload.distance_time = cardData.distance_time;
+        if (cardData.pace_speed !== undefined) payload.pace_speed = cardData.pace_speed;
+        if (cardData.run_screenshot_base64 !== undefined) payload.run_screenshot_base64 = cardData.run_screenshot_base64;
   
-        const created = await services.taskService.createTask(payload);
+        const result = await services.taskService.createTask(payload);
   
-        const newCard = {
-          id: `card-${String(created.id || '').replace("undefined", '')}`,
-          title: created.title,
-          description: created.description,
-          dueDate: created.due_date,
-          createdAt: created.created_at,
-        };
+        if (result.success) {
+          const newCard = {
+            id: `card-${String(result.id || '').replace("undefined", '')}`,
+            title: result.title,
+            sets_reps: result.sets_reps,
+            muscle_group: result.muscle_group,
+            rpe_scale: result.rpe_scale,
+            distance_time: result.distance_time,
+            pace_speed: result.pace_speed,
+            run_screenshot_base64: result.run_screenshot_base64,
+            createdAt: result.created_at,
+          };
   
-        board.columns[columnIndex].cards.push(newCard);
-        toast.success("Cartão criado com sucesso!");
-        if (created.warning) {
-          toast.warn(created.warning);
+          board.columns[columnIndex].cards.push(newCard);
+          toast.success("Exercício criado com sucesso!");
+          if (result.warning) {
+            toast.warn(result.warning);
+          }
+        } else {
+          toast.error(result.message || "Erro ao criar exercício.");
         }
       }
   
@@ -511,8 +547,8 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
       setCardToEdit(null);
       setShowCreateCardModal(false);
     } catch (error) {
-      console.error("Erro ao salvar o cartão:", error);
-      const errorMessage = error.response?.data?.detail || "Erro ao salvar o cartão.";
+      console.error("Erro ao salvar o exercício:", error);
+      const errorMessage = error.response?.data?.detail || "Erro ao salvar o exercício.";
       toast.error(errorMessage);
     } finally {
       setIsSavingCard(false);
@@ -554,8 +590,7 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
 
     try {
       const payload = {
-        board_id: Number(board.id.toString().replace('col-', '').replace('undefined', '')),
-        column_id: Number(board.columns[columnIndex].id.replace('col-', '').replace('undefined', '')),
+        board_id: Number(board.id.toString().replace('board-', '').replace('undefined', '')),
         task_id: Number(cardToDelete.id.toString().replace('card-', '').replace('undefined', '')),
       };
   
@@ -614,25 +649,21 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
 
     setBoards(updatedBoards);
 
-
     if (sourceColId !== destColId) {
       try {
         const cardId = Number(movedCard.id.replace('card-', '').replace('undefined', ''));
-        const oldColumnIdToSend = Number(source.droppableId.replace('col-', '').replace('undefined', ''));
+        const boardId = Number(board.id.replace('board-', '').replace('undefined', ''));
 
         await services.taskService.updateTask({
-          board_id: Number(board.id.replace('board-', '').replace('undefined', '')),
           task_id: cardId,
-          old_column_id: oldColumnIdToSend,
-          column_id: Number(destColId.replace('col-', '').replace('undefined', '')), 
-          title: movedCard.title ?? '',
-          description: movedCard.description ?? '',
-          due_date: movedCard.dueDate ?? null,
+          board_id: boardId,
+          column_id: destColId,
+          title: movedCard.title,
         });
       } catch (error) {
-        console.error("Erro desconhecido ao mover o card:", error);
-        const errorMessage = error.response?.data?.detail || 'Erro desconhecido ao mover o card.';
-        toast.error(`Não foi possível mover o card: ${errorMessage}`);
+        console.error("Erro ao mover o exercício:", error);
+        const errorMessage = error.response?.data?.detail || 'Erro ao mover o exercício.';
+        toast.error(`Não foi possível mover o exercício: ${errorMessage}`);
         const revertedBoards = structuredClone(boards);
         setBoards(revertedBoards);
       }
@@ -672,6 +703,13 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
         cards: (col.cards || []).map((card) => ({
           ...card,
           id: `card-${String(card.id || '').replace("undefined", '')}`,
+          title: card.title,
+          sets_reps: card.sets_reps,
+          muscle_group: card.muscle_group,
+          rpe_scale: card.rpe_scale,
+          distance_time: card.distance_time,
+          pace_speed: card.pace_speed,
+          createdAt: card.created_at
         })) || [],
       }));
       console.log("Colunas Normalizadas (handleSelectBoard - antes da ordenação):", normalizedColumns);
@@ -1166,8 +1204,8 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
           isEditing={!!cardToEdit}
           loading={isSavingCard}
           isDeleting={isDeletingCard}
-          additionalFields={getCardConfigForBoard().additionalFields}
-          cardType={getCardConfigForBoard().cardType}
+          additionalFields={getCardConfigForBoard(boards[selectedBoardIndex])?.additionalFields || []}
+          cardType={getCardConfigForBoard(boards[selectedBoardIndex])?.cardType || 'default'}
         />
       )}
 

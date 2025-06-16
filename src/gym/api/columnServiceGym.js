@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getTasks } from './taskServiceGym';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -14,7 +15,26 @@ const getBoardColumns = async (boardId) => {
         Authorization: `Bearer ${localStorage.getItem('access_token')}`,
       },
     });
-    return response.data.columns || [];
+
+    const columns = response.data.columns || [];
+
+    // Buscar os cards para cada coluna
+    const columnsWithCards = await Promise.all(
+      columns.map(async (column) => {
+        try {
+          const tasks = await getTasks(boardId, column.id);
+          return {
+            ...column,
+            cards: tasks || []
+          };
+        } catch (taskError) {
+          console.error('Erro ao buscar cards da coluna:', taskError);
+          return { ...column, cards: [] };
+        }
+      })
+    );
+
+    return columnsWithCards;
   } catch (error) {
     console.error('Erro ao listar colunas:', error);
     return [];
@@ -23,7 +43,10 @@ const getBoardColumns = async (boardId) => {
 
 const createColumn = async (boardId, title) => {
   try {
-    const response = await axios.post(`${API_URL}/column`, { board_id: boardId, title }, {
+    const response = await axios.post(`${API_URL}/column`, { 
+      title,
+      board_id: boardId 
+    }, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem('access_token')}`,
       },
@@ -36,7 +59,10 @@ const createColumn = async (boardId, title) => {
 
 const updateColumn = async (boardId, columnId, newTitle) => {
   try {
-    const response = await axios.put(`${API_URL}/column/${boardId}`, { column_id: columnId, title: newTitle }, {
+    const response = await axios.put(`${API_URL}/column/${boardId}`, { 
+      column_id: columnId,
+      title: newTitle 
+    }, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem('access_token')}`,
       },
@@ -53,7 +79,10 @@ const deleteColumn = async (boardId, columnId) => {
       headers: {
         Authorization: `Bearer ${localStorage.getItem('access_token')}`,
       },
-      data: { id: columnId, board_id: boardId } 
+      data: { 
+        id: columnId,
+        board_id: boardId 
+      }
     });
     return { success: true, ...response.data };
   } catch (error) {
