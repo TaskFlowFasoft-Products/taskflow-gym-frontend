@@ -1,19 +1,37 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import styles from "./styles/createBoardModal.module.css";
 
-const CreateBoardModal = ({ onClose, onCreate, loading, boardTemplates = [] }) => {
+const CreateBoardModal = ({ onClose, onCreate, loading, boardTemplates = [], existingBoardNames = [] }) => {
   const [name, setName] = useState("");
   const [nameError, setNameError] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
 
+  const availableTemplates = useMemo(() => {
+    const filtered = boardTemplates.filter(
+      (template) => !existingBoardNames.includes(template.name)
+    );
+    console.log('CreateBoardModal - availableTemplates (useMemo):', filtered);
+    return filtered;
+  }, [boardTemplates, existingBoardNames]);
+
   useEffect(() => {
-    if (boardTemplates.length > 0) {
-      setSelectedTemplateId(boardTemplates[0].id);
+    console.log('CreateBoardModal - useEffect running. current selectedTemplateId:', selectedTemplateId);
+    const currentSelectedExists = availableTemplates.some(template => String(template.id) === selectedTemplateId);
+    if (availableTemplates.length > 0 && (!selectedTemplateId || !currentSelectedExists)) {
+      const newSelection = String(availableTemplates[0].id);
+      setSelectedTemplateId(newSelection);
+      console.log('CreateBoardModal - useEffect setting selectedTemplateId to:', newSelection);
+    } else if (availableTemplates.length === 0 && selectedTemplateId !== "") {
+      setSelectedTemplateId(""); // Limpa a seleção se não houver modelos disponíveis
+      console.log('CreateBoardModal - useEffect clearing selectedTemplateId.');
     }
-  }, [boardTemplates]);
+  }, [availableTemplates, selectedTemplateId]);
 
   const validateName = (value) => {
-    if (boardTemplates.length === 0 && (!value || value.trim() === '')) {
+    if (availableTemplates.length === 0 && boardTemplates.length > 0) {
+      setNameError("Todos os modelos de quadro já foram criados.");
+      return false;
+    } else if (boardTemplates.length === 0 && (!value || value.trim() === '')) {
       setNameError("O nome do quadro é obrigatório");
       return false;
     }
@@ -27,7 +45,7 @@ const CreateBoardModal = ({ onClose, onCreate, loading, boardTemplates = [] }) =
       return;
     }
   
-    if (boardTemplates.length > 0) {
+    if (availableTemplates.length > 0) {
       onCreate({ templateId: selectedTemplateId });
     } else {
       onCreate({ 
@@ -45,17 +63,25 @@ const CreateBoardModal = ({ onClose, onCreate, loading, boardTemplates = [] }) =
           {boardTemplates.length > 0 ? (
             <div className={styles.formGroup}>
               <label className={styles.label}>Escolha um Modelo*</label>
-              <select
-                className={styles.input}
-                value={selectedTemplateId}
-                onChange={(e) => setSelectedTemplateId(e.target.value)}
-              >
-                {boardTemplates.map((template) => (
-                  <option key={template.id} value={template.id}>
-                    {template.name}
-                  </option>
-                ))}
-              </select>
+              {availableTemplates.length > 0 ? (
+                <select
+                  className={styles.input}
+                  value={selectedTemplateId}
+                  onChange={(e) => {
+                    console.log('CreateBoardModal - select onChange. e.target.value:', e.target.value);
+                    setSelectedTemplateId(e.target.value);
+                    console.log('CreateBoardModal - selectedTemplateId after onChange:', e.target.value); // Log immediately after setting
+                  }}
+                >
+                  {availableTemplates.map((template) => (
+                    <option key={template.id} value={String(template.id)}>
+                      {template.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p className={styles.errorMessage}>Todos os modelos de quadro já foram criados.</p>
+              )}
             </div>
           ) : (
             <div className={styles.formGroup}>
@@ -77,7 +103,7 @@ const CreateBoardModal = ({ onClose, onCreate, loading, boardTemplates = [] }) =
             </div>
           )}
           <div className={styles.buttonGroup}>
-            <button type="submit" className={styles.createButton} disabled={loading || (boardTemplates.length === 0 && !name.trim())}>
+            <button type="submit" className={styles.createButton} disabled={loading || (availableTemplates.length === 0 && boardTemplates.length > 0) || (boardTemplates.length === 0 && !name.trim())}>
               {loading ? "Salvando..." : "Criar Quadro"}
             </button>
             <button

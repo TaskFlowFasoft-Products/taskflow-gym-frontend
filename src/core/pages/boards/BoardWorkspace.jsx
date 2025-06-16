@@ -67,6 +67,33 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
 
   const [loggedInUserName, setLoggedInUserName] = useState("Carregando...");
 
+  const fetchBoards = async () => {
+    let data = [];
+    try {
+      data = await services.boardService.getBoards();
+    } catch (error) {
+      console.error("Erro ao carregar quadros:", error);
+      toast.error("Erro ao carregar quadros.");
+    }
+
+    const normalizedBoards = data.map((board) => ({
+      ...board,
+      id: `board-${String(board.id || '').replace("undefined", '')}`,
+      name: board.name || board.title || '',
+      columns: (board.columns || []).map((column) => ({
+        ...column,
+        id: `col-${String(column.id || '').replace("undefined", '')}`,
+        cards: (column.cards || []).map((card) => ({
+          ...card,
+          id: `card-${String(card.id || '').replace("undefined", '')}`,
+        })),
+      })),
+    }));
+
+    setBoards(normalizedBoards);
+    setLoading(false);
+  };
+
   useEffect(() => {
     const storedUsername = localStorage.getItem("username");
     if (storedUsername) {
@@ -77,36 +104,8 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
   }, []);
 
   useEffect(() => {
-    const fetchBoards = async () => {
-      let data = [];
-      try {
-        data = await services.boardService.getBoards();
-      } catch (error) {
-        console.error("Erro ao carregar quadros:", error);
-        toast.error("Erro ao carregar quadros.");
-      }
-  
-      const normalizedBoards = data.map((board) => ({
-        ...board,
-        id: `board-${String(board.id || '').replace("undefined", '')}`,
-        name: board.name || board.title || '',
-        columns: (board.columns || []).map((column) => ({
-          ...column,
-          id: `col-${String(column.id || '').replace("undefined", '')}`,
-          cards: (column.cards || []).map((card) => ({
-            ...card,
-            id: `card-${String(card.id || '').replace("undefined", '')}`,
-          })),
-        })),
-      }));
-  
-      setBoards(normalizedBoards);
-      setLoading(false);
-    };
-  
     fetchBoards();
   }, [services.boardService]);
-  
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -259,13 +258,8 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
       }
 
       if (result.success) {
-        setBoards((prev) => [...prev, {
-          ...result.board,
-          id: `board-${String(result.board.id || '').replace("undefined", '')}`,
-          name: result.board.name || result.board.title || '',
-          columns: result.board.columns || [],
-        }]);
         toast.success("Quadro criado com sucesso!");
+        await fetchBoards();
       } else {
         toast.error(result.message || "Erro ao criar quadro.");
       }
@@ -999,6 +993,7 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
           onCreate={handleCreateBoard}
           loading={isCreatingBoard}
           boardTemplates={boardTemplates}
+          existingBoardNames={boards.map(board => board.name)}
         />
       )}
 
