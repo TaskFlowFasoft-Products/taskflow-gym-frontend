@@ -11,6 +11,8 @@ const CreateCardModal = ({
     loading = false,
     isDeleting = false,
     cardType = 'default',
+    currentColumnActualDate = null,
+    existingMuscleGroupCards = [],
 }) => {
     const [title, setTitle] = useState(card?.title || "");
     const [titleError, setTitleError] = useState("");
@@ -18,6 +20,7 @@ const CreateCardModal = ({
     // Campos específicos para musculação
     const [setsReps, setSetsReps] = useState(card?.sets_reps || "");
     const [muscleGroup, setMuscleGroup] = useState(card?.muscle_group || "");
+    const [muscleGroupError, setMuscleGroupError] = useState("");
     const [rpeScale, setRpeScale] = useState(card?.rpe_scale || "");
 
     // Campos específicos para cardio
@@ -46,9 +49,68 @@ const CreateCardModal = ({
         return true;
     };
 
+    const validateMuscleGroupRest = (currentMuscleGroup) => {
+        if (!currentMuscleGroup || currentMuscleGroup.trim() === '') {
+            setMuscleGroupError("");
+            return true;
+        }
+
+        const muscleGroupLower = currentMuscleGroup.trim().toLowerCase();
+        const TWO_DAYS_IN_MS = 48 * 60 * 60 * 1000; // 48 horas em milissegundos
+
+        // Converter currentColumnActualDate para um objeto Date
+        const currentCardDate = currentColumnActualDate ? new Date(currentColumnActualDate) : null;
+
+        console.log('--- Validação Grupo Muscular ---');
+        console.log('Grupo Muscular Atual (tentando adicionar/editar):', currentMuscleGroup);
+        console.log('Data da Coluna Atual (timestamp):', currentColumnActualDate);
+        console.log('Objeto Data da Coluna Atual:', currentCardDate);
+
+        if (!currentCardDate) {
+            // Se não houver uma data de coluna válida, não podemos validar o intervalo
+            setMuscleGroupError("");
+            console.log('Data da coluna atual inválida, ignorando validação de 48h.');
+            return true;
+        }
+
+        for (const existingCard of existingMuscleGroupCards) {
+            // Ignorar o próprio card se estivermos em modo de edição
+            if (isEditing && existingCard.taskId === card?.id) {
+                console.log('Ignorando o próprio card em edição:', existingCard.taskId);
+                continue;
+            }
+
+            if (existingCard.muscleGroup && existingCard.muscleGroup.toLowerCase() === muscleGroupLower) {
+                const existingTaskDate = new Date(existingCard.taskDate);
+
+                // Calcular a diferença em milissegundos
+                const timeDiff = Math.abs(currentCardDate.getTime() - existingTaskDate.getTime());
+                const timeDiffHours = timeDiff / (1000 * 60 * 60); // Converter para horas
+
+                console.log(`Comparando ${currentMuscleGroup} (data: ${currentCardDate.toLocaleDateString()}) com ${existingCard.muscleGroup} (data: ${existingTaskDate.toLocaleDateString()})`);
+                console.log(`Diferença de tempo: ${timeDiffHours.toFixed(2)} horas`);
+                console.log(`A diferença é menor ou igual a 48h? ${timeDiff <= TWO_DAYS_IN_MS}`);
+
+                if (timeDiff <= TWO_DAYS_IN_MS) {
+                    setMuscleGroupError(`Já existe um treino de ${existingCard.muscleGroup} nas últimas 48h.`);
+                    console.log('Validação falhou: Treino recente encontrado.');
+                    return false;
+                }
+            }
+        }
+
+        setMuscleGroupError("");
+        console.log('Validação de 48h aprovada.');
+        return true;
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!validateTitle(title)) {
+            return;
+        }
+
+        if (cardType === 'musculacao' && !validateMuscleGroupRest(muscleGroup)) {
             return;
         }
 
@@ -61,7 +123,6 @@ const CreateCardModal = ({
             cardData.sets_reps = setsReps.trim() || null;
             cardData.muscle_group = muscleGroup.trim() || null;
             cardData.rpe_scale = rpeScale ? Number(rpeScale) : null;
-            // Campos de cardio são explicitamente null
             cardData.distance_time = null;
             cardData.pace_speed = null;
             cardData.run_screenshot_base64 = null;
@@ -70,7 +131,6 @@ const CreateCardModal = ({
             cardData.pace_speed = paceSpeed.trim() || null;
             cardData.run_screenshot_base64 = runScreenshotBase64 || null;
             cardData.rpe_scale = rpeScale ? Number(rpeScale) : null;
-            // Campos de musculação são explicitamente null
             cardData.sets_reps = null;
             cardData.muscle_group = null;
         }
@@ -126,11 +186,16 @@ const CreateCardModal = ({
                                 <label className={styles.label}>Grupo Muscular</label>
                                 <input
                                     type="text"
-                                    className={styles.input}
+                                    className={`${styles.input} ${muscleGroupError ? styles.inputError : ''}`}
                                     value={muscleGroup}
-                                    onChange={(e) => setMuscleGroup(e.target.value)}
+                                    onChange={(e) => {
+                                        setMuscleGroup(e.target.value);
+                                        validateMuscleGroupRest(e.target.value);
+                                    }}
+                                    onBlur={(e) => validateMuscleGroupRest(e.target.value)}
                                     placeholder="Ex: Peito"
                                 />
+                                {muscleGroupError && <span className={styles.errorMessage}>{muscleGroupError}</span>}
                             </div>
                         </>
                     )}
@@ -239,7 +304,7 @@ const CreateCardModal = ({
                         <button
                             type="submit"
                             className={styles.saveBtn}
-                            disabled={loading || !title.trim() || isDeleting}
+                            disabled={loading || !title.trim() || isDeleting || (cardType === 'musculacao' && !!muscleGroupError)}
                         >
                             {loading ? "Salvando..." : (isEditing ? "Salvar alterações" : "Salvar")}
                         </button>

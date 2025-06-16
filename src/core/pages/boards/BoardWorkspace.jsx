@@ -25,6 +25,37 @@ import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import CreateColumnsModal from "../../../gym/components/modals/CreateColumnsModal";
 import { DAYS_OF_WEEK } from "../../../gym/components/modals/CreateColumnsModal";
 
+// Função auxiliar para mapear colunas com a data real
+const mapColumnsWithActualDates = (columns) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Normalizar para o início do dia atual
+
+  const dayNameToGetDayIndex = {
+    'Domingo': 0,
+    'Segunda-feira': 1,
+    'Terça-feira': 2,
+    'Quarta-feira': 3,
+    'Quinta-feira': 4,
+    'Sexta-feira': 5,
+    'Sábado': 6,
+  };
+
+  return columns.map(column => {
+    const columnDayOfWeek = dayNameToGetDayIndex[column.title];
+    if (columnDayOfWeek === undefined) {
+      return { ...column, actualDate: null };
+    }
+
+    const currentDayOfWeek = today.getDay();
+    let diffDays = columnDayOfWeek - currentDayOfWeek;
+
+    const columnDate = new Date(today);
+    columnDate.setDate(today.getDate() + diffDays);
+    columnDate.setHours(0, 0, 0, 0); // Garantir consistência
+
+    return { ...column, actualDate: columnDate.getTime() };
+  });
+};
 
 const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalFields: [], cardType: 'default' }), boardTemplates = [] }) => {
   const [boards, setBoards] = useState([]);
@@ -71,6 +102,29 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
 
   const [loggedInUserName, setLoggedInUserName] = useState("Carregando...");
 
+  // Novos estados para a validação de grupo muscular no modal
+  const [currentModalColumnActualDate, setCurrentModalColumnActualDate] = useState(null);
+  const [existingMuscleGroupCardsForValidation, setExistingMuscleGroupCardsForValidation] = useState([]);
+
+  // Função auxiliar para atualizar a lista de cards de grupo muscular para validação
+  const updateMuscleGroupValidationData = (currentBoards) => {
+    const muscleGroupTasks = [];
+    currentBoards.forEach(board => {
+      board.columns.forEach(column => {
+        column.cards.forEach(card => {
+          if (card.muscle_group) {
+            muscleGroupTasks.push({
+              muscleGroup: card.muscle_group,
+              taskDate: card.createdAt,
+              taskId: card.id
+            });
+          }
+        });
+      });
+    });
+    setExistingMuscleGroupCardsForValidation(muscleGroupTasks);
+  };
+
   const fetchBoards = async () => {
     let data = [];
     try {
@@ -91,6 +145,15 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
         cards: (column.cards || []).map((card) => ({
           ...card,
           id: `card-${String(card.id || '').replace("undefined", '')}`,
+          // Garantir que campos específicos sempre existam, mesmo que nulos
+          sets_reps: card.sets_reps || null,
+          muscle_group: card.muscle_group || null,
+          rpe_scale: card.rpe_scale || null,
+          distance_time: card.distance_time || null,
+          pace_speed: card.pace_speed || null,
+          run_screenshot_base64: card.run_screenshot_base64 || null,
+          // Normalizar createdAt para o início do dia para validações de data
+          createdAt: card.created_at ? new Date(new Date(card.created_at).setHours(0, 0, 0, 0)).getTime() : null,
         })),
       })),
     }));
@@ -107,8 +170,16 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
     }));
     console.log("Quadros Ordenados (após ordenação de colunas):", orderedBoards);
 
-    setBoards(orderedBoards);
+    // Calcular a data real para cada coluna usando a função auxiliar
+    const boardsWithActualDates = orderedBoards.map(board => ({
+      ...board,
+      columns: mapColumnsWithActualDates(board.columns),
+    }));
+
+    setBoards(boardsWithActualDates);
+    console.log("fetchBoards - Boards com actualDate (após setBoards):", boardsWithActualDates); // DEBUG
     setLoading(false);
+    updateMuscleGroupValidationData(boardsWithActualDates); // Atualiza dados de validação após carregar boards
   };
 
   useEffect(() => {
@@ -422,6 +493,36 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
 
   const handleCreateCardClick = (colIndex) => {
     setColumnToAddCard(colIndex);
+
+    const currentBoard = boards[selectedBoardIndex];
+    if (!currentBoard) {
+      console.error("handleCreateCardClick: currentBoard is null or undefined.");
+      return;
+    }
+
+    const currentColumn = currentBoard.columns[colIndex];
+    if (!currentColumn) {
+      console.error("handleCreateCardClick: currentColumn is null or undefined.");
+      return;
+    }
+    console.log('handleCreateCardClick - currentColumn.actualDate:', currentColumn.actualDate); // LOG PARA DEBUG
+    setCurrentModalColumnActualDate(currentColumn.actualDate); // Data da coluna para o novo card
+
+    const muscleGroupTasks = [];
+    currentBoard.columns.forEach(column => {
+        column.cards.forEach(card => {
+            // Apenas considerar cards de musculação (com muscle_group preenchido) para validação
+            if (card.muscle_group) {
+                muscleGroupTasks.push({
+                    muscleGroup: card.muscle_group,
+                    taskDate: card.createdAt, // Usar a data de criação real do card
+                    taskId: card.id // Adiciona o ID para exclusão em caso de edição
+                });
+            }
+        });
+    });
+    setExistingMuscleGroupCardsForValidation(muscleGroupTasks);
+
     setShowCreateCardModal(true);
   };
 
@@ -455,16 +556,60 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
         const payload = {
           task_id: Number(cardData.id.toString().replace('card-', '').replace('undefined', '')),
           board_id: Number(board.id.toString().replace('board-', '').replace('undefined', '')),
-          title: cardData.title,
+          column_id: Number(board.columns[columnIndex].id.replace('col-', '').replace('undefined', '')),
         };
 
-        // Adiciona campos específicos baseado no tipo de card
-        if (cardData.sets_reps !== undefined) payload.sets_reps = cardData.sets_reps;
-        if (cardData.muscle_group !== undefined) payload.muscle_group = cardData.muscle_group;
-        if (cardData.rpe_scale !== undefined) payload.rpe_scale = cardData.rpe_scale;
-        if (cardData.distance_time !== undefined) payload.distance_time = cardData.distance_time;
-        if (cardData.pace_speed !== undefined) payload.pace_speed = cardData.pace_speed;
-        if (cardData.run_screenshot_base64 !== undefined) payload.run_screenshot_base64 = cardData.run_screenshot_base64;
+        // Conditionally add fields only if they have changed or are explicitly cleared
+        if (cardData.title !== cardToEdit.title) {
+          payload.title = cardData.title;
+        }
+
+        // Helper for string fields that can be null or empty string
+        const setStringFieldIfChanged = (fieldName) => {
+          const originalValue = cardToEdit[fieldName] === null ? "" : String(cardToEdit[fieldName]);
+          const newValue = cardData[fieldName] === null ? "" : String(cardData[fieldName]); // Normalize null to empty string for comparison
+
+          if (newValue !== originalValue) {
+            payload[fieldName] = newValue.trim() === '' ? null : newValue.trim();
+          }
+        };
+
+        setStringFieldIfChanged('sets_reps');
+        setStringFieldIfChanged('muscle_group');
+        setStringFieldIfChanged('distance_time');
+        setStringFieldIfChanged('pace_speed');
+
+        // RPE Scale (number or null)
+        let newRpeValue = null;
+        if (cardData.rpe_scale !== null && cardData.rpe_scale !== undefined && String(cardData.rpe_scale).trim() !== '') {
+            newRpeValue = Number(cardData.rpe_scale);
+        }
+        // Compare numeric values, converting original to number if it's a string
+        const originalRpeValue = cardToEdit.rpe_scale === null || cardToEdit.rpe_scale === undefined || String(cardToEdit.rpe_scale).trim() === '' ? null : Number(cardToEdit.rpe_scale);
+        if (newRpeValue !== originalRpeValue) {
+            payload.rpe_scale = newRpeValue;
+        }
+
+        // run_screenshot_base64 (string or null)
+        // Normalize both to null if empty string for comparison
+        const originalScreenshot = cardToEdit.run_screenshot_base64 || null;
+        const newScreenshot = cardData.run_screenshot_base64 || null;
+
+        if (newScreenshot !== originalScreenshot) {
+          payload.run_screenshot_base64 = newScreenshot;
+        }
+
+        console.log('Payload de atualização (construído dinamicamente):', payload);
+
+        // Only proceed with API call if there are changes beyond the required fields
+        if (Object.keys(payload).length <= 3 && payload.title === cardToEdit.title) {
+            // If only task_id, board_id, column_id are present and title didn't change
+            toast.info("Nenhuma alteração detectada para salvar.");
+            setIsSavingCard(false);
+            setShowCreateCardModal(false);
+            setCardToEdit(null);
+            return;
+        }
 
         const result = await services.taskService.updateTask(payload);
   
@@ -473,20 +618,17 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
           const cardIndex = cards.findIndex((c) => c.id === cardData.id);
   
           if (cardIndex !== -1) {
+            // Update the card using cardData (the local form data)
             cards[cardIndex] = {
-              ...cards[cardIndex],
-              title: cardData.title,
-              sets_reps: cardData.sets_reps,
-              muscle_group: cardData.muscle_group,
-              rpe_scale: cardData.rpe_scale,
-              distance_time: cardData.distance_time,
-              pace_speed: cardData.pace_speed,
-              run_screenshot_base64: cardData.run_screenshot_base64,
+              ...cards[cardIndex], // Keep existing properties
+              ...cardData, // Apply all new properties from the form
+              id: cardData.id // Ensure the ID remains consistent (with 'card-' prefix)
             };
             toast.success("Exercício atualizado com sucesso!");
           } else {
             toast.warn("Exercício não encontrado para atualização.");
           }
+
         } else {
           toast.error(result.message || "Erro ao atualizar exercício.");
         }
@@ -508,15 +650,13 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
           board_id: boardId,
           column_id: columnId,
           title: cardData.title,
+          sets_reps: cardData.sets_reps,
+          muscle_group: cardData.muscle_group,
+          rpe_scale: cardData.rpe_scale,
+          distance_time: cardData.distance_time,
+          pace_speed: cardData.pace_speed,
+          run_screenshot_base64: cardData.run_screenshot_base64,
         };
-
-        // Adiciona campos específicos baseado no tipo de card
-        if (cardData.sets_reps !== undefined) payload.sets_reps = cardData.sets_reps;
-        if (cardData.muscle_group !== undefined) payload.muscle_group = cardData.muscle_group;
-        if (cardData.rpe_scale !== undefined) payload.rpe_scale = cardData.rpe_scale;
-        if (cardData.distance_time !== undefined) payload.distance_time = cardData.distance_time;
-        if (cardData.pace_speed !== undefined) payload.pace_speed = cardData.pace_speed;
-        if (cardData.run_screenshot_base64 !== undefined) payload.run_screenshot_base64 = cardData.run_screenshot_base64;
   
         const result = await services.taskService.createTask(payload);
   
@@ -524,26 +664,24 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
           const newCard = {
             id: `card-${String(result.id || '').replace("undefined", '')}`,
             title: result.title,
-            sets_reps: result.sets_reps,
-            muscle_group: result.muscle_group,
-            rpe_scale: result.rpe_scale,
-            distance_time: result.distance_time,
-            pace_speed: result.pace_speed,
-            run_screenshot_base64: result.run_screenshot_base64,
-            createdAt: result.created_at,
+            sets_reps: cardData.sets_reps || null,
+            muscle_group: cardData.muscle_group || null,
+            rpe_scale: cardData.rpe_scale || null,
+            distance_time: cardData.distance_time || null,
+            pace_speed: cardData.pace_speed || null,
+            run_screenshot_base64: cardData.run_screenshot_base64 || null,
+            createdAt: result.created_at ? new Date(new Date(result.created_at).setHours(0, 0, 0, 0)).getTime() : null, // Normalizar createdAt para o início do dia
           };
   
           board.columns[columnIndex].cards.push(newCard);
           toast.success("Exercício criado com sucesso!");
-          if (result.warning) {
-            toast.warn(result.warning);
-          }
         } else {
           toast.error(result.message || "Erro ao criar exercício.");
         }
       }
   
       setBoards(updatedBoards);
+      updateMuscleGroupValidationData(updatedBoards); // Atualiza dados de validação após alteração do board
       setCardToEdit(null);
       setShowCreateCardModal(false);
     } catch (error) {
@@ -601,6 +739,7 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
       );
   
       setBoards(updatedBoards);
+      updateMuscleGroupValidationData(updatedBoards); // Atualiza dados de validação após deletar card
       toast.success("Cartão excluído com sucesso!");
     } catch (error) {
       console.error("Erro ao excluir o cartão:", error);
@@ -660,6 +799,7 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
           column_id: destColId,
           title: movedCard.title,
         });
+        updateMuscleGroupValidationData(updatedBoards); // Atualiza dados de validação após mover card
       } catch (error) {
         console.error("Erro ao mover o exercício:", error);
         const errorMessage = error.response?.data?.detail || 'Erro ao mover o exercício.';
@@ -704,13 +844,15 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
           ...card,
           id: `card-${String(card.id || '').replace("undefined", '')}`,
           title: card.title,
-          sets_reps: card.sets_reps,
-          muscle_group: card.muscle_group,
-          rpe_scale: card.rpe_scale,
-          distance_time: card.distance_time,
-          pace_speed: card.pace_speed,
-          run_screenshot_base64: card.run_screenshot_base64,
-          createdAt: card.created_at
+          // Garantir que campos específicos sempre existam, mesmo que nulos
+          sets_reps: card.sets_reps || null,
+          muscle_group: card.muscle_group || null,
+          rpe_scale: card.rpe_scale || null,
+          distance_time: card.distance_time || null,
+          pace_speed: card.pace_speed || null,
+          run_screenshot_base64: card.run_screenshot_base64 || null,
+          // Normalizar createdAt para o início do dia para validações de data
+          createdAt: card.created_at ? new Date(new Date(card.created_at).setHours(0, 0, 0, 0)).getTime() : null
         })) || [],
       }));
       console.log("Colunas Normalizadas (handleSelectBoard - antes da ordenação):", normalizedColumns);
@@ -723,9 +865,13 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
       });
       console.log("Colunas Ordenadas (handleSelectBoard - após ordenação):", normalizedColumns);
 
+      // Calcular a data real para cada coluna usando a função auxiliar
+      const columnsWithActualDates = mapColumnsWithActualDates(normalizedColumns);
+
       setBoards((prevBoards) => {
         const updated = [...prevBoards];
-        updated[index].columns = normalizedColumns;
+        updated[index].columns = columnsWithActualDates;
+        console.log("handleSelectBoard - Boards com actualDate (após setBoards):", updated); // DEBUG
         return updated;
       });
     } catch (error) {
@@ -1205,8 +1351,30 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
           isEditing={!!cardToEdit}
           loading={isSavingCard}
           isDeleting={isDeletingCard}
-          additionalFields={getCardConfigForBoard(boards[selectedBoardIndex])?.additionalFields || []}
-          cardType={getCardConfigForBoard(boards[selectedBoardIndex])?.cardType || 'default'}
+          cardType={(() => {
+            const currentBoard = boards[selectedBoardIndex];
+            if (!currentBoard) return 'default';
+
+            const isGymBoard = currentBoard.columns.some(col => DAYS_OF_WEEK.some(day => day.name === col.title));
+
+            if (cardToEdit) {
+                // Quando editando um card existente, priorize o tipo pelos dados do card
+                if (cardToEdit.sets_reps !== null || cardToEdit.muscle_group !== null) {
+                    return 'musculacao';
+                }
+                if (cardToEdit.distance_time !== null || cardToEdit.pace_speed !== null || cardToEdit.run_screenshot_base64 !== null) {
+                    return 'cardio';
+                }
+                // Fallback para cards existentes em quadros de treino, se os campos específicos estiverem nulos/vazios
+                if (isGymBoard) {
+                    return 'musculacao'; // Assume musculação se for um board de treino e não for explicitamente cardio
+                }
+            }
+            // Para novos cards ou se não for um board de treino, use a configuração geral do board
+            return getCardConfigForBoard(currentBoard).cardType;
+          })()}
+          currentColumnActualDate={currentModalColumnActualDate}
+          existingMuscleGroupCards={existingMuscleGroupCardsForValidation}
         />
       )}
 

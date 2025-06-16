@@ -81,11 +81,13 @@
 
 .errorMessage {
     color: #ff4d4f;
-    font-size: 0.8rem; /* Tamanho da fonte ligeiramente menor */
-    margin-top: -8px;
-    margin-bottom: 12px;
+    font-size: 0.85rem; /* Tamanho da fonte ligeiramente maior */
+    margin-top: 8px; /* Ajustado para garantir espaço e evitar corte */
+    margin-bottom: 15px; /* Ajustado para garantir espaço */
     display: block;
     font-weight: 500;
+    word-break: break-word; /* Garante que o texto quebre a linha */
+    white-space: normal; /* Garante que o texto quebre a linha */
 }
 
 .textarea {
