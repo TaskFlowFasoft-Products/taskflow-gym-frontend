@@ -74,6 +74,7 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
     let data = [];
     try {
       data = await services.boardService.getBoards();
+      console.log("Dados da API (fetchBoards):", data);
     } catch (error) {
       console.error("Erro ao carregar quadros:", error);
       toast.error("Erro ao carregar quadros.");
@@ -92,16 +93,18 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
         })),
       })),
     }));
+    console.log("Quadros Normalizados (antes da ordenação de colunas):", normalizedBoards);
 
     // Ordenar as colunas de cada quadro pela ordem dos dias da semana
     const orderedBoards = normalizedBoards.map(board => ({
       ...board,
-      columns: board.columns.sort((a, b) => {
+      columns: [...board.columns].sort((a, b) => {
         const dayAIndex = DAYS_OF_WEEK.findIndex(day => day.name === a.title);
         const dayBIndex = DAYS_OF_WEEK.findIndex(day => day.name === b.title);
         return dayAIndex - dayBIndex;
       }),
     }));
+    console.log("Quadros Ordenados (após ordenação de colunas):", orderedBoards);
 
     setBoards(orderedBoards);
     setLoading(false);
@@ -660,8 +663,9 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
 
     try {
       const columns = await services.columnService.getBoardColumns(boardId);
+      console.log("Colunas da API (handleSelectBoard):", columns);
   
-      const normalizedColumns = columns.map((col) => ({
+      let normalizedColumns = columns.map((col) => ({
         ...col,
         id: `col-${String(col.id || '').replace("undefined", '')}`,
         cards: (col.cards || []).map((card) => ({
@@ -669,7 +673,16 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
           id: `card-${String(card.id || '').replace("undefined", '')}`,
         })) || [],
       }));
+      console.log("Colunas Normalizadas (handleSelectBoard - antes da ordenação):", normalizedColumns);
   
+      // Ordenar as colunas pela ordem dos dias da semana
+      normalizedColumns = [...normalizedColumns].sort((a, b) => {
+        const dayAIndex = DAYS_OF_WEEK.findIndex(day => day.name === a.title);
+        const dayBIndex = DAYS_OF_WEEK.findIndex(day => day.name === b.title);
+        return dayAIndex - dayBIndex;
+      });
+      console.log("Colunas Ordenadas (handleSelectBoard - após ordenação):", normalizedColumns);
+
       setBoards((prevBoards) => {
         const updated = [...prevBoards];
         updated[index].columns = normalizedColumns;
@@ -735,39 +748,40 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
 
     setIsCreatingColumn(true); // Reusing for column creation by days
     let allSucceeded = true;
+    let newColumnsData = [];
 
     try {
       for (const day of days) {
         const result = await services.columnService.createColumn(boardId, day);
-        if (!result.success) {
+        if (!result.success || !result.column) {
           allSucceeded = false;
           toast.error(`Erro ao criar coluna para ${day}: ${result.message || 'Erro desconhecido.'}`);
+        } else {
+          // Normaliza e adiciona a nova coluna aos dados
+          newColumnsData.push({
+            ...result.column,
+            id: `col-${String(result.column.id || '').replace("undefined", '')}`,
+            cards: [],
+          });
         }
       }
+
       if (allSucceeded) {
+        setBoards(prevBoards => {
+          const updatedBoards = structuredClone(prevBoards);
+          const currentBoard = updatedBoards[selectedBoardIndex];
+          
+          // Adiciona as novas colunas e ordena-as
+          currentBoard.columns = [...currentBoard.columns, ...newColumnsData].sort((a, b) => {
+            const dayAIndex = DAYS_OF_WEEK.findIndex(day => day.name === a.title);
+            const dayBIndex = DAYS_OF_WEEK.findIndex(day => day.name === b.title);
+            return dayAIndex - dayBIndex;
+          });
+
+          return updatedBoards;
+        });
+
         toast.success("Colunas criadas com sucesso!");
-        await fetchBoards(); // Atualiza o estado com os dados do servidor
-        // Recarrega as colunas do quadro selecionado
-        const columns = await services.columnService.getBoardColumns(boardId);
-        const normalizedColumns = columns.map((col) => ({
-          ...col,
-          id: `col-${String(col.id || '').replace("undefined", '')}`,
-          cards: (col.cards || []).map((card) => ({
-            ...card,
-            id: `card-${String(card.id || '').replace("undefined", '')}`,
-          })) || [],
-        }));
-        // Ordenar as colunas pela ordem dos dias da semana
-        normalizedColumns.sort((a, b) => {
-          const dayAIndex = DAYS_OF_WEEK.findIndex(day => day.name === a.title);
-          const dayBIndex = DAYS_OF_WEEK.findIndex(day => day.name === b.title);
-          return dayAIndex - dayBIndex;
-        });
-        setBoards((prevBoards) => {
-          const updated = [...prevBoards];
-          updated[selectedBoardIndex].columns = normalizedColumns;
-          return updated;
-        });
       } else {
         toast.warn("Algumas colunas não puderam ser criadas.");
       }
