@@ -22,6 +22,8 @@ import {
 import LogoIcon from "../../assets/Logo Icone.png";
 import { toast } from "react-toastify";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import CreateColumnsModal from "../../../gym/components/modals/CreateColumnsModal";
+import { DAYS_OF_WEEK } from "../../../gym/components/modals/CreateColumnsModal";
 
 
 const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalFields: [], cardType: 'default' }), boardTemplates = [] }) => {
@@ -47,6 +49,7 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
   const [cardToEdit, setCardToEdit] = useState(null);
   const [showDeleteCardConfirmModal, setShowDeleteCardConfirmModal] = useState(false);
   const [cardToDelete, setCardToDelete] = useState(null);
+  const [showCreateColumnsModal, setShowCreateColumnsModal] = useState(false);
 
   const [isSavingCard, setIsSavingCard] = useState(false);
   const [isCreatingBoard, setIsCreatingBoard] = useState(false);
@@ -90,7 +93,17 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
       })),
     }));
 
-    setBoards(normalizedBoards);
+    // Ordenar as colunas de cada quadro pela ordem dos dias da semana
+    const orderedBoards = normalizedBoards.map(board => ({
+      ...board,
+      columns: board.columns.sort((a, b) => {
+        const dayAIndex = DAYS_OF_WEEK.findIndex(day => day.name === a.title);
+        const dayBIndex = DAYS_OF_WEEK.findIndex(day => day.name === b.title);
+        return dayAIndex - dayBIndex;
+      }),
+    }));
+
+    setBoards(orderedBoards);
     setLoading(false);
   };
 
@@ -705,6 +718,68 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
     return () => document.removeEventListener("mousedown", handleClickOutsideColumnMenu);
   }, [columnDropdownRef]);
 
+  const handleCreateColumnsByDays = async (days) => {
+    const board = boards[selectedBoardIndex];
+    if (!board) {
+      toast.error("Nenhum quadro selecionado para adicionar colunas.");
+      return;
+    }
+
+    const boardId = Number(String(board.id).replace('board-', '').replace('undefined', ''));
+
+    if (isNaN(boardId)) {
+        console.error("ID do quadro inválido para criação de colunas:", board.id);
+        toast.error("Erro: ID do quadro inválido para criação de colunas.");
+        return;
+    }
+
+    setIsCreatingColumn(true); // Reusing for column creation by days
+    let allSucceeded = true;
+
+    try {
+      for (const day of days) {
+        const result = await services.columnService.createColumn(boardId, day);
+        if (!result.success) {
+          allSucceeded = false;
+          toast.error(`Erro ao criar coluna para ${day}: ${result.message || 'Erro desconhecido.'}`);
+        }
+      }
+      if (allSucceeded) {
+        toast.success("Colunas criadas com sucesso!");
+        await fetchBoards(); // Atualiza o estado com os dados do servidor
+        // Recarrega as colunas do quadro selecionado
+        const columns = await services.columnService.getBoardColumns(boardId);
+        const normalizedColumns = columns.map((col) => ({
+          ...col,
+          id: `col-${String(col.id || '').replace("undefined", '')}`,
+          cards: (col.cards || []).map((card) => ({
+            ...card,
+            id: `card-${String(card.id || '').replace("undefined", '')}`,
+          })) || [],
+        }));
+        // Ordenar as colunas pela ordem dos dias da semana
+        normalizedColumns.sort((a, b) => {
+          const dayAIndex = DAYS_OF_WEEK.findIndex(day => day.name === a.title);
+          const dayBIndex = DAYS_OF_WEEK.findIndex(day => day.name === b.title);
+          return dayAIndex - dayBIndex;
+        });
+        setBoards((prevBoards) => {
+          const updated = [...prevBoards];
+          updated[selectedBoardIndex].columns = normalizedColumns;
+          return updated;
+        });
+      } else {
+        toast.warn("Algumas colunas não puderam ser criadas.");
+      }
+    } catch (error) {
+      console.error("Erro ao criar colunas por dia:", error);
+      toast.error("Erro ao criar colunas por dia.");
+    } finally {
+      setIsCreatingColumn(false);
+      setShowCreateColumnsModal(false);
+    }
+  };
+
   return (
     <div className={styles.pageContainer}>
       <header className={styles.header}>
@@ -938,7 +1013,7 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
                         className={styles.addColumnStyledBtn}
                         onClick={() => {
                           if (selectedBoardIndex !== null) {
-                            setShowCreateColumnModal(true);
+                            setShowCreateColumnsModal(true);
                           } else {
                             alert("Selecione ou crie um quadro primeiro.");
                           }
@@ -951,20 +1026,20 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
                   ) : (
                     <div className={styles.emptyBoard}>
                       <p className={styles.emptyText}>
-                        Este quadro está vazio. <em>Comece criando uma coluna.</em>
+                        Este quadro está vazio. <em>Comece criando as colunas por dias da semana.</em>
                       </p>
                       <button
                         className={styles.addColumnStyledBtn}
                         onClick={() => {
                           if (selectedBoardIndex !== null) {
-                            setShowCreateColumnModal(true);
+                            setShowCreateColumnsModal(true);
                           } else {
                             alert("Selecione ou crie um quadro primeiro.");
                           }
                         }}
                       >
                         <FaPlus size={10} style={{ marginRight: "6px" }} />
-                        Adicionar nova lista
+                        Criar Colunas por Dia
                       </button>
                     </div>
                   )}
@@ -980,6 +1055,16 @@ const BoardWorkspace = ({ services, getCardConfigForBoard = () => ({ additionalF
               onClose={() => setShowCreateColumnModal(false)}
               onCreate={handleCreateColumn}
               loading={isCreatingColumn}
+            />
+          )}
+
+          {/* Novo Modal de criação de colunas por dia */}
+          {showCreateColumnsModal && selectedBoardIndex !== null && (
+            <CreateColumnsModal
+              onClose={() => setShowCreateColumnsModal(false)}
+              onCreate={handleCreateColumnsByDays}
+              loading={isCreatingColumn}
+              existingColumnNames={boards[selectedBoardIndex]?.columns.map(col => col.title) || []}
             />
           )}
 

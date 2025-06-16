@@ -1,0 +1,139 @@
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+  }
+  
+  .modalContent {
+    background-color: #ffffff;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    width: 100%;
+    max-width: 420px;
+    animation: fadeIn 0.2s ease-in-out;
+  }
+  
+  .modalTitle {
+    font-size: 1.6rem;
+    font-weight: bold;
+    text-align: center;
+    margin-top: -0.5rem;
+    margin-bottom: 2.5rem;
+    color: #333;
+  }
+  
+  .description {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      color: #555;
+      font-size: 0.95rem;
+  }
+  
+  .daysGrid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+  }
+  
+  .dayItem {
+      display: flex;
+      align-items: center;
+      background-color: #f0f4f8;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+      font-weight: 500;
+      color: #333;
+      white-space: nowrap;
+  }
+  
+  .dayItem input[type="checkbox"] {
+      margin-right: 0.75rem;
+      width: 18px;
+      height: 18px;
+      accent-color: #3a86ff; /* Cor do checkbox quando selecionado */
+  }
+  
+  .dayItem:hover {
+      background-color: #e2eaf2;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  .dayItem input[type="checkbox"]:checked + span { /* Exemplo: estilizar texto ao checar */
+      color: #3a86ff;
+  }
+  
+  .disabledDay {
+      opacity: 0.6;
+      cursor: not-allowed;
+      background-color: #e9ecef;
+      color: #888;
+  }
+  
+  .disabledDay:hover {
+      background-color: #e9ecef; /* Evita mudança de cor ao hover em desabilitado */
+      box-shadow: none;
+  }
+  
+  .buttonGroup {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+  
+  .createButton,
+  .cancelButton {
+    flex: 1;
+    padding: 0.75rem;
+    font-size: 1rem;
+    font-weight: bold;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .createButton {
+    background-color: #3a86ff;
+    color: white;
+  }
+  
+  .createButton:hover {
+    background-color: #2769d1;
+  }
+  
+  .createButton:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+  }
+  
+  .cancelButton {
+    background-color: #e0e0e0;
+    color: #333;
+  }
+  
+  .cancelButton:hover {
+    background-color: #ccc;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  } 
