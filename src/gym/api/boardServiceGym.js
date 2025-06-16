@@ -25,7 +25,6 @@ const getBoards = async () => {
     if (response && response.data && Array.isArray(response.data.boards)) {
       return response.data.boards;
     } else {
-      console.warn('API response for /gym/boards did not contain an array of boards:', response.data);
       return [];
     }
   } catch (error) {

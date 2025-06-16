@@ -43,3 +43,20 @@
     background-color: #2f6fe3;
   }
   
+  .emptyText em {
+    color: #FF6B6B;
+  }
+  
+  .emptyBoard button {
+    background-color: #FF6B6B;
+    color: white;
+  }
+  
+  .emptyBoard button:hover {
+    background-color: #e06060;
+  }
+  
+  .emptyBoard button:active {
+    background-color: #cc5454;
+  }
+  

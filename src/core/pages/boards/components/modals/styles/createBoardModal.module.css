@@ -67,7 +67,7 @@
   }
   
   .inputError {
-      border-color: #ff4d4f !important;
+      border-color: #FF6B6B !important;
       box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2) !important;
   }
   
@@ -109,12 +109,16 @@
   }
   
   .createButton {
-    background-color: #3a86ff;
+    background-color: #FF6B6B;
     color: white;
   }
   
   .createButton:hover {
-    background-color: #2769d1;
+    background-color: #e06060;
+  }
+  
+  .createButton:active {
+    background-color: #cc5454;
   }
   
   .createButton:disabled {

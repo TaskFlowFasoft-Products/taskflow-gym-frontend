@@ -61,7 +61,7 @@
       margin-right: 0.75rem;
       width: 18px;
       height: 18px;
-      accent-color: #3a86ff; /* Cor do checkbox quando selecionado */
+      accent-color: #FF6B6B; /* Cor do checkbox quando selecionado */
   }
   
   .dayItem:hover {
@@ -70,7 +70,7 @@
   }
   
   .dayItem input[type="checkbox"]:checked + span { /* Exemplo: estilizar texto ao checar */
-      color: #3a86ff;
+      color: #FF6B6B;
   }
   
   .disabledDay {
@@ -105,12 +105,16 @@
   }
   
   .createButton {
-    background-color: #3a86ff;
+    background-color: #FF6B6B;
     color: white;
   }
   
   .createButton:hover {
-    background-color: #2769d1;
+    background-color: #e06060; /* A shade of coral for hover */
+  }
+  
+  .createButton:active {
+    background-color: #cc5454; /* A darker shade for active */
   }
   
   .createButton:disabled {

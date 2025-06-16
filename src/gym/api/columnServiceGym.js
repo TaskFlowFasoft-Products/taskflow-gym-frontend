@@ -5,7 +5,6 @@ const API_URL = import.meta.env.VITE_API_URL;
 
 const getBoardColumns = async (boardId) => {
   if (!boardId || isNaN(Number(boardId))) {
-    console.error('ID do quadro inválido:', boardId);
     return [];
   }
 

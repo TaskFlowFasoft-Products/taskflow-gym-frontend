@@ -10,20 +10,16 @@ const CreateBoardModal = ({ onClose, onCreate, loading, boardTemplates = [], exi
     const filtered = boardTemplates.filter(
       (template) => !existingBoardNames.includes(template.name)
     );
-    console.log('CreateBoardModal - availableTemplates (useMemo):', filtered);
     return filtered;
   }, [boardTemplates, existingBoardNames]);
 
   useEffect(() => {
-    console.log('CreateBoardModal - useEffect running. current selectedTemplateId:', selectedTemplateId);
     const currentSelectedExists = availableTemplates.some(template => String(template.id) === selectedTemplateId);
     if (availableTemplates.length > 0 && (!selectedTemplateId || !currentSelectedExists)) {
       const newSelection = String(availableTemplates[0].id);
       setSelectedTemplateId(newSelection);
-      console.log('CreateBoardModal - useEffect setting selectedTemplateId to:', newSelection);
     } else if (availableTemplates.length === 0 && selectedTemplateId !== "") {
-      setSelectedTemplateId(""); // Limpa a seleção se não houver modelos disponíveis
-      console.log('CreateBoardModal - useEffect clearing selectedTemplateId.');
+      setSelectedTemplateId(""); 
     }
   }, [availableTemplates, selectedTemplateId]);
 
@@ -68,9 +64,7 @@ const CreateBoardModal = ({ onClose, onCreate, loading, boardTemplates = [], exi
                   className={styles.input}
                   value={selectedTemplateId}
                   onChange={(e) => {
-                    console.log('CreateBoardModal - select onChange. e.target.value:', e.target.value);
                     setSelectedTemplateId(e.target.value);
-                    console.log('CreateBoardModal - selectedTemplateId after onChange:', e.target.value); // Log immediately after setting
                   }}
                 >
                   {availableTemplates.map((template) => (

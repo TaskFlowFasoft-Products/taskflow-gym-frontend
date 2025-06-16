@@ -115,3 +115,36 @@
     }
   }
   
+  .input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 1rem;
+  }
+  
+  .inputError {
+    border-color: #FF6B6B;
+  }
+  
+  .button {
+    width: 100%;
+    padding: 12px;
+    background-color: #FF6B6B;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  
+  .button:hover {
+    background-color: #e06060;
+  }
+  
+  .button:active {
+    background-color: #cc5454;
+  }
+  

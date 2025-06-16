@@ -70,7 +70,7 @@
 }
 
 .inputError {
-    border-color: #ff4d4f !important;
+    border-color: #FF6B6B;
     box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2) !important;
 }
 
@@ -139,16 +139,16 @@
 }
 
 .saveBtn {
-    background-color: #3a86ff;
-    color: #fff;
+    background-color: #FF6B6B;
+    color: white;
 }
 
-.saveBtn:hover {
-    background-color: #2f6cd8;
+.saveBtn:hover:not(:disabled) {
+    background-color: #e06060;
 }
 
-.saveBtn:active {
-    transform: scale(0.98);
+.saveBtn:active:not(:disabled) {
+    background-color: #cc5454;
 }
 
 /* Novos estilos para a pré-visualização e botões de imagem */

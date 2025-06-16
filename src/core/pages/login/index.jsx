@@ -1,6 +1,6 @@
 import LoginForm from "./LoginForm";
 import styles from "./styles/styles.module.css";
-import logo from "../../assets/logo.png";
+import logo from "../../assets/taskgym.png";
 
 const LoginPage = () => {
   return (

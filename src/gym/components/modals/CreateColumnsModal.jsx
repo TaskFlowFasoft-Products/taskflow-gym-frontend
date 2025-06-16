@@ -16,8 +16,7 @@ const CreateColumnsModal = ({ onClose, onCreate, loading, existingColumnNames = 
   const [selectedDays, setSelectedDays] = useState([]);
 
   useEffect(() => {
-    // Opcional: pré-selecionar alguns dias se desejar
-    // setSelectedDays(['segunda', 'terca', 'quarta']);
+
   }, []);
 
   const handleDayChange = (dayId) => {

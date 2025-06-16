@@ -58,34 +58,24 @@ const CreateCardModal = ({
         const muscleGroupLower = currentMuscleGroup.trim().toLowerCase();
         const TWO_DAYS_IN_MS = 48 * 60 * 60 * 1000; // 48 horas em milissegundos
 
-        // Converter currentColumnActualDate para um objeto Date
         const currentCardDate = currentColumnActualDate ? new Date(currentColumnActualDate) : null;
 
-        console.log('--- Validação Grupo Muscular ---');
-        console.log('Grupo Muscular Atual (tentando adicionar/editar):', currentMuscleGroup);
-        console.log('Data da Coluna Atual (timestamp):', currentColumnActualDate);
-        console.log('Objeto Data da Coluna Atual:', currentCardDate);
-
         if (!currentCardDate) {
-            // Se não houver uma data de coluna válida, não podemos validar o intervalo
             setMuscleGroupError("");
             console.log('Data da coluna atual inválida, ignorando validação de 48h.');
             return true;
         }
 
         for (const existingCard of existingMuscleGroupCards) {
-            // Ignorar o próprio card se estivermos em modo de edição
             if (isEditing && existingCard.taskId === card?.id) {
-                console.log('Ignorando o próprio card em edição:', existingCard.taskId);
                 continue;
             }
 
             if (existingCard.muscleGroup && existingCard.muscleGroup.toLowerCase() === muscleGroupLower) {
                 const existingTaskDate = new Date(existingCard.taskDate);
 
-                // Calcular a diferença em milissegundos
                 const timeDiff = Math.abs(currentCardDate.getTime() - existingTaskDate.getTime());
-                const timeDiffHours = timeDiff / (1000 * 60 * 60); // Converter para horas
+                const timeDiffHours = timeDiff / (1000 * 60 * 60); 
 
                 console.log(`Comparando ${currentMuscleGroup} (data: ${currentCardDate.toLocaleDateString()}) com ${existingCard.muscleGroup} (data: ${existingTaskDate.toLocaleDateString()})`);
                 console.log(`Diferença de tempo: ${timeDiffHours.toFixed(2)} horas`);
@@ -100,7 +90,6 @@ const CreateCardModal = ({
         }
 
         setMuscleGroupError("");
-        console.log('Validação de 48h aprovada.');
         return true;
     };
 

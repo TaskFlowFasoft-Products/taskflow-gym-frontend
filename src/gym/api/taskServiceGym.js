@@ -19,12 +19,10 @@ const getTasks = async (boardId, columnId) => {
 
 const createTask = async (taskData) => {
   try {
-    // Garantindo que os campos obrigatórios estejam presentes e no formato correto
     const payload = {
       board_id: Number(taskData.board_id),
       column_id: Number(taskData.column_id),
       title: String(taskData.title),
-      // Campos opcionais com valores padrão null
       sets_reps: taskData.sets_reps || null,
       distance_time: taskData.distance_time || null,
       pace_speed: taskData.pace_speed || null,
@@ -33,7 +31,6 @@ const createTask = async (taskData) => {
       muscle_group: taskData.muscle_group || null
     };
 
-    // Validação adicional para rpe_scale
     if (payload.rpe_scale !== null) {
       if (payload.rpe_scale < 1 || payload.rpe_scale > 10) {
         return {
@@ -44,7 +41,6 @@ const createTask = async (taskData) => {
       }
     }
 
-    console.log('Payload sendo enviado:', payload);
 
     const response = await axios.post(`${API_URL}/gym/tasks`, payload, {
       headers: {
@@ -82,13 +78,11 @@ const createTask = async (taskData) => {
 
 const updateTask = async (taskData) => {
   try {
-    // Campos obrigatórios
     const payload = {
       task_id: Number(taskData.task_id),
       board_id: Number(taskData.board_id),
     };
 
-    // Adiciona campos opcionais apenas se foram fornecidos
     if (taskData.column_id !== undefined) {
       payload.column_id = Number(taskData.column_id);
     }
@@ -119,7 +113,6 @@ const updateTask = async (taskData) => {
       payload.muscle_group = taskData.muscle_group ? String(taskData.muscle_group).trim() : null;
     }
 
-    console.log('Payload de atualização:', payload);
 
     const response = await axios.put(`${API_URL}/gym/tasks`, payload, {
       headers: {
@@ -161,8 +154,6 @@ const deleteTask = async (taskData) => {
       task_id: Number(taskData.task_id),
       board_id: Number(taskData.board_id)
     };
-
-    console.log('Payload de deleção:', payload);
 
     const response = await axios.delete(`${API_URL}/gym/tasks`, {
       data: payload,
